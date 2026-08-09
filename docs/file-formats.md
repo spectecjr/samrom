@@ -25,8 +25,8 @@ back on load (the DOS re-enters the ROM's common code at `LDFL`/`LKTH`/
 ## The 80-byte header
 
 Multi-byte *lengths and addresses* use the ROM's **page form**: three bytes
-`pages, lo, hi` meaning \(\text{pages} \times 16384 + (\text{hi:lo} \bmod
-16384)\) — the hi byte usually has bit 7 set (&8000-based section-C
+`pages, lo, hi` meaning $ \text{pages} \times 16384 + (\text{hi:lo} \bmod
+16384) $ — the hi byte usually has bit 7 set (&8000-based section-C
 address); loaders must mask bits 6–7 of the hi byte when forming the 14-bit
 remainder, and treat the whole triple as invalid ("none") when the first
 byte is &FF.
@@ -57,7 +57,7 @@ byte is &FF.
 ## What the data block contains for a BASIC program (type 16)
 
 SAVE writes **one contiguous block** starting at `PROG` with length
-\((\text{ELINE} - 1) - \text{PROG}\) — that is, everything from the first
+$ (\text{ELINE} - 1) - \text{PROG} $ — that is, everything from the first
 program line up to *but excluding* the &FF terminator that ends the
 string/array area (the terminator is deliberately not saved; LOAD re-plants
 one). The block therefore contains, in order:

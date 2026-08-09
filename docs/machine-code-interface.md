@@ -96,7 +96,7 @@ pages ROM1 in for the duration, and restores everything on exit).
 * Number forms (details in
   [tokenized-program-format.md §9](tokenized-program-format.md#9-the-5-byte-number-format)):
   small integer `00 sign lo hi 00`, or FP `exponent m1 m2 m3 m4` where the
-  magnitude is \(m \times 2^{e-128}\) with \(0.5 \le m < 1\), the mantissa's
+  magnitude is $ m \times 2^{e-128} $ with $ 0.5 \le m < 1 $, the mantissa's
   leading 1 implicit, and its bit 7 replaced by the sign.
 * Strings on the same stack are 5-byte descriptors:
   `page+flags, start-lo, start-hi, len-lo, len-hi`.
@@ -116,7 +116,7 @@ Alternatively copy 5 bytes to (`STKEND`) yourself and add 5 to `STKEND`.
 
 ### Running a calculation
 
-Example — hypotenuse \(\sqrt{x^2+y^2}\) of the two numbers already on the
+Example — hypotenuse $ \sqrt{x^2+y^2} $ of the two numbers already on the
 stack (x below y):
 
 ```z80
@@ -173,16 +173,16 @@ the same 0–524287 address scheme used by PEEK/DPEEK/POKE. The value is
 interpreted **relative to the context base page** (page 0 for a normal
 BASIC program), and the ROM pages the target in for you:
 
-| Address argument \(N\) | Executes at | Paging while your code runs |
+| Address argument $ N $ | Executes at | Paging while your code runs |
 |---|---|---|
 | 0 – 16383 | &0000 + N | ROM0 (section A) — i.e. you can CALL ROM0 routines directly |
 | 16384 – 32767 | &4000 + (N − 16384) | The base (system) page, section B |
 | 32768 – 49151 | &8000 + (N − 32768) | Page base+1 selected into section C |
 | 49152 – 65535 | &C000 + (N − 49152) | URPORT = base+1, so the code runs in base+2 via section D |
-| ≥ 65536 | &8000 + (N mod 16384) | Page base + \(\lfloor N/16384 \rfloor\) − 1 selected into section C |
+| ≥ 65536 | &8000 + (N mod 16384) | Page base + $ \lfloor N/16384 \rfloor $ − 1 selected into section C |
 
 (That last row is why the ReadMe's `CALL 229385` reaches offset 9 of RAM
-page 13 on a 256K machine: \(229385 = 14 \times 16384 + 9\).)
+page 13 on a 256K machine: $ 229385 = 14 \times 16384 + 9 $.)
 
 **Register state on entry to your routine** (`CALLX`):
 
