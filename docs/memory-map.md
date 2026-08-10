@@ -41,7 +41,7 @@ position within the 16K page. Length is in bytes.
 | &513F | &513F | 1 | &113F | `TLBYTE` | Type/length byte of the variable name being processed |
 | &5140 | &5187 | 72 | &1140 | `NMBUFF` / `FIRLET` | Variable/FN/PROC name buffer (a second name copy lives at `TLBYTE+33` = &5160) |
 | &5188 | &518F | 8 | &1188 | `SCRNBUF` / `NMISTK` | SCREEN$ compressed-character buffer; the NMI stack grows **down** from &5188 |
-| &5190 | &55D7 | 1096 | &1190 | `CHARSVAL` | Unpacked character set, 8 bytes/char for codes 32–168 (`CHARS` = &5090 = CHARSVAL−256; `UDG` = &5510 = CHR$ 144) |
+| &5190 | &55D7 | 1096 | &1190 | `CHARSVAL` | Unpacked character set, 8 bytes/char for codes 32–168 (`CHARS` = &5090 = CHARSVAL−256; `UDG` = &5510 = CHR$ 144). Codes &A9–&FF have no font in ROM — see [hudg.md](hudg.md) |
 | &55D8 | &55FF | 40 | &15D8 | `PALTAB` | Working palette: 2 × 16 palette memories (flash pair) + mode-2 spare entries |
 | &5600 | &57FF | 512 | &1600 | `LINICOLS` | Line-interrupt colour table (up to 127 × 4-byte entries + terminator) |
 | &5800 | &5880 | 129 | &1800 | `DKBU` | DEF KEY definitions (`DKDEF`; growth limit `DKLIM` = &5880 by default) |
@@ -54,6 +54,11 @@ position within the 16K page. Length is in bytes.
 
 Totals: &4000–&5CD4 (7381 bytes) of fixed system use; the rest of page 0
 belongs to the moving BASIC area.
+
+The only genuinely unused hole in the system page is &5881–&58DF (95 bytes).
+[hudg.md](hudg.md) works through the consequences for anyone wanting to add
+a high-UDG character set, including how to carve a larger hole by raising
+`PROG`.
 
 ## The moving BASIC area (section C view, page 0 onward)
 

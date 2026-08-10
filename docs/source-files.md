@@ -18,8 +18,15 @@ Companion documents:
 - [memory-map.md](memory-map.md) — the system-page and BASIC-area memory map.
 - [machine-code-interface.md](machine-code-interface.md) — the jump table,
   restarts, calling the FP calculator, and CALL/USR parameter passing.
+- [extending-basic.md](extending-basic.md) — the `MTOKV`/`CMDV`/`RST28V`/
+  `PRTOKV` hooks, the free token budget, and worked examples of new commands,
+  functions, operators and external commands.
 - [file-formats.md](file-formats.md) — the saved-file header and how a BASIC
   program is encoded on tape/disc.
+- [font-rendering.md](font-rendering.md) — character cell geometry, and which
+  bits and scans of a bitmap reach the screen at each `CSIZE`.
+- [hudg.md](hudg.md) — the `CHARS`/`UDG`/`HUDG` font pointers and the dormant
+  high-UDG range.
 
 ## File index
 
@@ -44,7 +51,7 @@ Companion documents:
 | [fn.asm](#fnasm) | DEF FN/FN evaluation, DEF PROC/PROC call, LOCAL, the COMPILE pass that patches call buffers |
 | [nparpro.asm](#nparproasm) | PROC parameter processing (by value and by REF), RESTORE, local-variable teardown |
 | [misc2.asm](#misc2asm) | RST 8 error entry and DOS hand-off, ROM1→RAM stub loaders (incl. TOKMAIN), LET/DEFAULT, RUN/CLEAR, syntax helpers, class checks |
-| [endprint.asm](#endprintasm) | Final per-mode character rendering, screen address calculation, string compare, buffer fetch, memory-room tests |
+| [endprint.asm](#endprintasm) | Final per-mode character rendering (see [font-rendering.md](font-rendering.md)), screen address calculation, string compare, buffer fetch, memory-room tests |
 | [miscx1.asm](#miscx1asm) | ROM1 bodies copied to RAM: RENUM, GET, DELETE, KEYIN, POP, INPUT |
 | [miscx2.asm](#miscx2asm) | More copied bodies: DEF KEYCODE, DEF FN statement, **the tokenizer (TOKPT2)**, MERGE |
 | [fpcmain.asm](#fpcmainasm) | Floating-point calculator: opcode dispatch table, control loop, literals, jumps, comparisons |

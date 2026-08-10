@@ -59,8 +59,8 @@ main system-variable block (it must start on a page boundary).
 | Constant | Value | Description |
 |---|---|---|
 | `BGFLG` | VAR2+&34 | Block graphics flag |
-| `FL6OR8` | VAR2+&35 | 0 = 6-bit chars in MODE 2, NZ = 8-bit |
-| `CSIZE` | VAR2+&36 | (2) Character height/width |
+| `FL6OR8` | VAR2+&35 | 0 = 6-pixel chars in internal mode 2 (user `MODE 3`), NZ = 8-pixel. Ignored by the other modes — see [font-rendering.md](font-rendering.md) |
+| `CSIZE` | VAR2+&36 | (2) Character height (low byte, 6–32) / width (high byte, 6 or 8). See [font-rendering.md](font-rendering.md) |
 | `UWRHS` | VAR2+&38 | Upper window RHS (starts at 31) |
 | `UWLHS` | VAR2+&39 | Upper window LHS (starts 0) |
 | `UWTOP` | VAR2+&3A | Upper window top (starts 0) |
@@ -206,8 +206,8 @@ corresponding ROM routine.
 
 | Constant | Value | Description |
 |---|---|---|
-| `CEXTAB` | VAR2+&0100 | (32) Colour-applied expansion table (mode 2/3 printing) |
-| `EXTAB` | VAR2+&0120 | (32) 16 words of mode-3 nibble→word expansion (or 16 bytes of mode-2 doubled data) |
+| `CEXTAB` | VAR2+&0100 | (32) Colour-applied expansion table (internal mode 2/3 printing) — see [font-rendering.md](font-rendering.md) |
+| `EXTAB` | VAR2+&0120 | (32) 16 words of internal-mode-3 nibble→word expansion (or 16 bytes of internal-mode-2 doubled data) |
 | `COMPFLG` | VAR2+&0140 | Flag bits used by label/FN/PROC compiler (bit 7 = whole program needs compiling) |
 | `BREAKDI` | VAR2+&0141 | NZ = BREAK between statements disabled |
 | `ERRSTAT` | VAR2+&0142 | Statement number for ON ERROR |
@@ -299,7 +299,7 @@ corresponding ROM routine.
 | `REPDEL` | &5C09 | Repeat delay |
 | `REPPER` | &5C0A | Repeat period |
 | `STREAMS` | &5C10 | (42) Stream displacements for streams −5 to 15 (16 maps to −4; table physically at &5C0C–&5C35) |
-| `CHARS` | &5C36 | (2) Character set pointer (address − 256) |
+| `CHARS` | &5C36 | (2) Character set pointer (address − 256; initialised to &5090). See [hudg.md](hudg.md) |
 | `RASP` | &5C38 | Warning buzz length |
 | `PIP` | &5C39 | Key-click length |
 | `ERRNR` | &5C3A | Error number (0 = OK) |
@@ -331,8 +331,8 @@ corresponding ROM routine.
 | `STRLEN` | &5C72 | (2) String length in assignments |
 | `SEED` | &5C76 | (2) RND seed |
 | `FRAMES` | &5C78 | (3) Frame counter |
-| `UDG` | &5C7B | (2) User-defined graphics pointer |
-| `HUDG` | &5C7D | (2) High UDG pointer |
+| `UDG` | &5C7B | (2) User-defined graphics pointer — bitmap of CHR$ 144; initialised to &5510. See [hudg.md](hudg.md) |
+| `HUDG` | &5C7D | (2) High UDG pointer — bitmap of CHR$ 169, for codes &A9–&FF. **Read by the ROM but never written or initialised** (reads &0000); see [hudg.md](hudg.md) |
 | `FRAMES34` | &5C7F | (2) Frames bytes 3–4 (5-byte frame counter) |
 | `OLDPOS` | &5C82 | Previous print position |
 | `SCRCT` | &5C8C | Scroll count (lines before "scroll?" prompt) |
@@ -450,7 +450,7 @@ corresponding ROM routine.
 | `NMBUFF` | &5140 | Variable/FN/PROC name buffer (alias `FIRLET` = first letter) |
 | `NMISTK` | &5188 | NMI stack |
 | `SCRNBUF` | &5188 | 8 bytes used by SCREEN$ for compressed form |
-| `CHARSVAL` | &5190 | Expanded character set (copied from compressed CHARSRC) |
+| `CHARSVAL` | &5190 | Expanded character set (unpacked from compressed `CHARSRC`): codes 32–168, 8 bytes each, ending at &55D7. See [hudg.md](hudg.md) |
 | `PALTAB` | &55D8 | Working palette table |
 | `LINICOLS` | &5600 | Line-interrupt colour table |
 | `DKBU` | &5800 | DEF KEY buffer |
