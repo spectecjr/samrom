@@ -107,7 +107,7 @@ Reserved for a DOS by the ROM. SAMDOS 2 does not implement it — MasterDOS
 does.
 
 ```basic
-MOVE "1:report" TO "2:report"
+MOVE "d1:report" TO "d2:report"
 ```
 
 ---

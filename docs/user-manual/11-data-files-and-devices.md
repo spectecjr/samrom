@@ -105,6 +105,34 @@ physical drives and adds 3 to 7 as RAM disks.
 
 The machine starts up with `DEVICE T`.
 
+### Drive prefixes on a file name — **`[DOS]`**
+
+Any file name given to a DOS command may name its drive directly, overriding
+the current `DEVICE` for that one command:
+
+```
+"d1:name"       drive 1
+"d2:name"       drive 2
+"d4:name"       [MD] RAM disk 4
+"name"          whatever DEVICE currently selects
+```
+
+The letter is **`D`**, and it is not optional. Both DOSes parse a prefix as a
+letter, then up to two digits, then a colon, and then check the letter: SAMDOS
+2 does it at the end of `evfile`, MasterDOS in `CKDISC`. Anything else gives
+error 10, *Invalid device*.
+
+> **A bare number is not a drive prefix.** `"1:name"` is not drive 1 — the
+> parser takes the `1` as the device *letter*, finds it is not `D`, and stops
+> with *Invalid device*. Write `"d1:name"`.
+
+Case does not matter; the letter is folded to upper case before it is tested,
+so `"d1:"` and `"D1:"` are the same.
+
+**`[MD]`** MasterDOS extends this in two ways: `"t:"` selects tape, and a
+prefix with no name after it — `"d1"` or `"d1:"` — is expanded to `"d1:*"`,
+so `DIR "d2:"` lists the whole of drive 2.
+
 ## 11.3 `SAVE`
 
 ```
@@ -401,11 +429,12 @@ otherwise surprising behaviour.
 | `COPY` | New entry created | Copied | Sectors claimed |
 | `MOVE` **`[MD]`** | Entry moved or recreated | Copied only across drives | Adjusted |
 | `FORMAT` | **Emptied** | **Lost** | **Cleared** |
+| `FORMAT … TO …` | **Emptied, then overwritten from the second drive** | **Lost, then copied over** | **Copied over** |
 | `BACKUP` **`[MD]`** | Whole disk duplicated | | |
 | `OPEN … OUT` | Created, length not yet known | Written as you print | Claimed as it grows |
 | `CLOSE` | **Length finalised** | Flushed | — |
 
-Two consequences worth remembering:
+Three consequences worth remembering:
 
 * **`ERASE` does not destroy data.** It clears the directory entry and frees
   the sectors. Until something else claims them the contents remain — which
@@ -415,6 +444,9 @@ Two consequences worth remembering:
 * **An unclosed `OPEN … OUT` file has no valid length.** The entry exists but
   records the file as empty or short. This is the commonest way to lose data
   on a SAM.
+* **`FORMAT … TO …` destroys the disk named *first*.** It formats that one and
+  copies the second onto it, so it reads backwards from `COPY` and `MOVE`.
+  See [`FORMAT`](appendix-a-keywords-a-l.md#format--dos) in appendix A.
 
 ### Open files move your program
 

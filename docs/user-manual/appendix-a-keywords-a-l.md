@@ -432,14 +432,15 @@ COPY [OVER] "source" TO "destination"
 ```
 
 Copies a file. `OVER` allows an existing destination to be replaced; without
-it a name clash is an error. Either name may carry a drive prefix.
+it a name clash is an error. Either name may carry a drive prefix — `d1:` or
+`d2:`, never a bare number.
 
 Reserved by the ROM and implemented by both SAMDOS 2 and MasterDOS. Note that
 the ROM's own screen dump is `DUMP`, not `COPY`.
 
 ```basic
 COPY "data" TO "backup"
-COPY OVER "2:data" TO "1:data"
+COPY OVER "d2:data" TO "d1:data"
 ```
 
 ### `COS`
@@ -933,22 +934,64 @@ FOR i = 10 TO 1 STEP -1: PRINT i: NEXT i
 ### `FORMAT` — **`[DOS]`**
 
 ```
-FORMAT [drive]
-FORMAT "name"
-FORMAT TO "name"
-FORMAT "source" TO "destination"
+FORMAT
+FORMAT "d1:name"
+FORMAT "d1:name", dirtracks                        [MD]
+FORMAT "d3:name", dirtracks, totaltracks           [MD]
+FORMAT "d1:" TO "d2:"
+FORMAT TO "d2:"
 ```
 
-Formats a disk and gives it a name. `FORMAT TO "name"` re-labels a disk that
-is already formatted, without erasing it; the two-name form formats and then
-copies. A drive number selects which drive to use.
+Formats a disk. The operand is a **drive specifier**, not a plain name: it is
+put through the same prefix parser as any other file name, so it takes a
+`dn:` prefix and must name a `D` device. With no operand at all the current
+`DEVICE` drive is used.
+
+**`[MD]`** The text *after* the prefix becomes the disc's name, written into
+track 0. **`[SD2]`** SAMDOS 2 has no disc names and ignores the text
+entirely — there, the operand is *only* a way of choosing the drive.
 
 Formatting writes the track and sector structure, an empty directory and an
 empty sector-allocation map. Everything previously on the disk is lost.
 
 ```basic
-FORMAT "work disk"
-FORMAT TO "renamed"
+FORMAT                     : REM the current DEVICE drive
+FORMAT "d2:work disk"      : REM drive 2, named "work disk" under MasterDOS
+```
+
+**Format and copy.** The `TO` forms are not a re-label: they format one disk
+and then copy another onto it, track by track. **The disk named first is the
+one destroyed.**
+
+| Form | Formatted and written | Read from |
+|---|---|---|
+| `FORMAT "d1:" TO "d2:"` | drive 1 | drive 2 |
+| `FORMAT TO "d2:"` | the current `DEVICE` drive | drive 2 |
+
+Read `FORMAT "d1:" TO "d2:"` as "format d1 *to be* d2", not as "copy d1 to
+d2" — it is the opposite way round from `COPY` and `MOVE`, and getting it
+backwards erases the disk you meant to keep.
+
+Both operands go through the drive-prefix parser, so in practice both need
+their prefix: an operand without one takes the current `DEVICE` drive, and
+naming the same drive twice is meaningless.
+
+**`[MD]`** RAM disks are rejected in the `TO` forms — the copy works only
+between real drives.
+
+```basic
+FORMAT "d1:" TO "d2:"      : REM wipe drive 1, make it a copy of drive 2
+```
+
+**Extra parameters.** **`[MD]`** MasterDOS lets the directory be sized at
+format time. *dirtracks* is 4 to 39 on a real disk (80 to 780 files) and 1 to
+39 on a RAM disk; *totaltracks* sizes a RAM disk and may only be given for
+one.
+
+```basic
+FORMAT "d1:big dir", 8     : REM eight directory tracks
+FORMAT "d3:scratch", 1, 40 : REM a 40-track RAM disk
+FORMAT "d3:", 0            : REM erase RAM disk 3 entirely
 ```
 
 The keyword is also used, unrelatedly, by the ROM in `LIST FORMAT n`.
