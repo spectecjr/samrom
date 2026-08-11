@@ -71,6 +71,7 @@ keyword alphabetically with its full syntax; keep it open while you program.
 These describe the ROM rather than the language, and are worth reading once
 you start writing machine code or picking the ROM apart:
 
+* [dos-and-extensions.md](../dos-and-extensions.md) — what SAMDOS 2, MasterDOS and MasterBASIC add on top of the ROM
 * [extending-basic.md](../extending-basic.md) — adding your own commands, functions, operators and external commands
 * [memory-map.md](../memory-map.md) — the system page and BASIC area layout
 * [machine-code-interface.md](../machine-code-interface.md) — jump table, restarts, the FP calculator, `CALL`/`USR` protocol

@@ -76,7 +76,8 @@ CSIZE:      EQU VAR2+&36        ; (2) Cell height (low byte, 6-32) then width (h
 UWRHS:      EQU VAR2+&38        ; Upper window right column (initially 31)
 UWLHS:      EQU VAR2+&39        ; Upper window left column (initially 0)
 UWTOP:      EQU VAR2+&3A        ; Upper window top row (initially 0)
-UWBOT:      EQU VAR2+&3B        ; Upper window bottom row (initially 18 -- 19 rows up, 2 down, 9 spare pixels)
+UWBOT:      EQU VAR2+&3B        ; Upper window bottom row (initially 18 -- 19 rows up and 2 down, of 9 pixels each.
+                                ; The leftover 3 scan lines become LSOFF.)
 
 LWRHS:      EQU VAR2+&3C        ; Lower window right column
 LWLHS:      EQU VAR2+&3D        ; Lower window left column

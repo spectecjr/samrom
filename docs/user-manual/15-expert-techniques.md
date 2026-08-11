@@ -215,12 +215,15 @@ The token budget is small and fixed:
 
 ### External commands
 
-A statement beginning with a full stop is the convention a DOS uses for its
-own commands. **The ROM does not implement it** — it does not recognise `.`
-at the start of a statement, and although `XCMDP` (23051) is reserved for
-"the first external command list", no ROM code ever reads it. External
-commands are built on `CMDV` like everything else, but they need no
-tokeniser or lister work, because the name is never tokenised.
+A statement beginning with a full stop is a convention for commands supplied
+from outside BASIC. **Nothing in the ROM or in either DOS implements it** —
+the ROM does not recognise `.` at the start of a statement, `XCMDP` (23051)
+is reserved for "the first external command list" but never read, and both
+SAMDOS 2 and MasterDOS dispatch on command tokens instead.
+
+Should you want to add them, they are built on `CMDV` like everything else,
+and need no tokeniser or lister work because the name is never tokenised —
+which makes them the cheapest way to add a lot of commands at once:
 
 ```basic
 .mycommand 1, 2, 3
@@ -304,6 +307,7 @@ A program that will be maintained should look like this:
 | Document | For |
 |---|---|
 | [extending-basic.md](../extending-basic.md) | Adding your own commands, functions, operators and external commands: every hook's contract, and four worked examples |
+| [dos-and-extensions.md](../dos-and-extensions.md) | What SAMDOS 2, MasterDOS and MasterBASIC add, and how they hook the ROM — the same techniques in production use |
 | [machine-code-interface.md](../machine-code-interface.md) | The jump table, the restarts, the FP calculator's instruction set, and the `CALL`/`USR` protocol in full |
 | [tokenized-program-format.md](../tokenized-program-format.md) | Exactly what a stored program looks like — needed to write a tokeniser, detokeniser or cross-compiler |
 | [memory-map.md](../memory-map.md) | Every region of the system page, with sizes |

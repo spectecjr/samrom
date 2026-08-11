@@ -60,16 +60,23 @@ equality when fractions are involved.
 
 `PRINT` (and `STR$`) render up to nine significant digits, drop trailing
 zeros, and switch to exponent notation when the number is very large or very
-small. The changeover for small numbers is controlled by `FRACLIM` (system
-variable offset &19A, default 6): a fraction may have that many leading zeros
-after the point before `E` notation is used instead.
+small. The changeover for small numbers is governed by `FRACLIM` (system
+variable offset &19A): a fraction may have that many leading zeros after the
+point before `E` notation is used instead.
 
 ```basic
 PRINT 1/3          : REM 0.333333333
 PRINT 1e10         : REM 10000000000
 PRINT 1e-7         : REM 1E-7
-POKE SVAR &19A,10  : PRINT 1e-7   : REM 0.0000001
 ```
+
+> **`FRACLIM` cannot be changed from BASIC.** It looks like a setting, but
+> the conversion routine writes 6 into it on entry, every time, so a `POKE`
+> is overwritten before the next number is printed. A different value is only
+> reachable from machine code, by calling the ROM's secondary entry point
+> `PFSTRSC` with the value in A — and that entry is not in the jump table.
+> To print a small number in full, format it yourself with `STR$` and string
+> arithmetic.
 
 ## 3.2 Strings
 

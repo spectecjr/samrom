@@ -7,10 +7,25 @@
 Every keyword and function in SAM BASIC, alphabetically. Notation:
 *italic* items you supply, `[ ]` optional, `…` repeatable.
 
-Where a keyword is marked **DOS**, the ROM tokenises it but has no
-implementation: it gives *Not understood* (29) unless a disk operating system
-has claimed it. Where it is marked **reserved**, the ROM does not use it at
-all.
+Every keyword here is in the ROM's own keyword table. A tag on the heading
+means the ROM tokenises and lists the word but has no implementation for it:
+it gives *Not understood* (29) until the tagged product is loaded.
+
+| Tag | Needs |
+|---|---|
+| **`[DOS]`** | Any disk operating system |
+| **`[SD2]`** | SAMDOS 2 |
+| **`[MD]`** | MasterDOS |
+| **`[MB]`** | MasterBASIC |
+
+Where a keyword is marked **reserved**, nothing uses it — not the ROM, and
+not any of the three extensions. `WRITE` and `OFF` look reserved from the
+ROM's side but are both claimed by the DOSes.
+
+Keywords that are not in the ROM's table at all are summarised at the
+[end of the M–Z file](appendix-a-keywords-m-z.md#keywords-added-by-the-extensions)
+and covered in full by
+[dos-and-extensions.md](../dos-and-extensions.md).
 
 Jump to: [A](#a) · [B](#b) · [C](#c) · [D](#d) · [E](#e) · [F](#f) ·
 [G](#g) · [H](#h) · [I](#i) · [K](#k) · [L](#l)
@@ -354,17 +369,25 @@ CLEAR 32767
 
 ```
 CLOSE #stream
+CLOSE #                                       [DOS]
 CLOSE SCREEN n
 CLOSE n
 ```
 
 * `CLOSE #s` detaches a stream. Streams 0–3 revert to their defaults; 4–15
-  become closed.
+  become closed. If the stream was open to a DOS file, the file is flushed
+  and its directory entry completed — **an unclosed output file is left
+  incomplete on the disk**.
+* **`[DOS]`** `CLOSE #` with no number closes *every* open file. Always do
+  this before the program ends. (MasterDOS also accepts `CLEAR #`.)
 * `CLOSE SCREEN n` frees a screen's two pages. Error 46, *Current screen*, if
   it is the one being drawn on.
 * `CLOSE n` releases *n* 16K pages of BASIC's allocation.
 
-A stream open to a DOS channel is closed by the DOS.
+```basic
+CLOSE #5
+CLOSE #
+```
 
 ### `CLS`
 
@@ -402,9 +425,22 @@ Resumes the program from where it stopped. After a BREAK during I/O
 
 Lines may be edited between the stop and the `CONTINUE`.
 
-### `COPY` — **DOS**
+### `COPY` — **`[DOS]`**
 
-Reserved. The ROM's screen-copy command is `DUMP`.
+```
+COPY [OVER] "source" TO "destination"
+```
+
+Copies a file. `OVER` allows an existing destination to be replaced; without
+it a name clash is an error. Either name may carry a drive prefix.
+
+Reserved by the ROM and implemented by both SAMDOS 2 and MasterDOS. Note that
+the ROM's own screen dump is `DUMP`, not `COPY`.
+
+```basic
+COPY "data" TO "backup"
+COPY OVER "2:data" TO "1:data"
+```
 
 ### `COS`
 
@@ -555,16 +591,19 @@ DEVICE letter [number]
 ```
 
 Selects where `SAVE` and `LOAD` go. `T` is tape (the number is the speed),
-`N` is the network (the number is the station, default 0), anything else is a
-DOS device (the number is the drive, default 1).
+`N` is the network (the number is the station, default 0), and any other
+letter is passed to the DOS with the number as a drive, defaulting to 1.
+
+Both SAMDOS 2 and MasterDOS use `D` for a disk drive. Drives 1 and 2 are
+physical; **`[MD]`** MasterDOS adds 3 to 7 as RAM disks.
 
 ```basic
 DEVICE T          : DEVICE T45
-DEVICE M          : DEVICE M2
+DEVICE D          : DEVICE D2
 DEVICE N5
 ```
 
-The trailing colon often written — `DEVICE M:` — is just a statement
+The trailing colon often written — `DEVICE D1:` — is just a statement
 separator.
 
 ### `DIM`
@@ -587,9 +626,27 @@ a subscript out of range gives error 4, *Subscript wrong*.
 DIM score(10), grid(8,8), name$(20,12)
 ```
 
-### `DIR` — **DOS**
+### `DIR` — **`[DOS]`**
 
-Directory listing.
+```
+DIR [#stream] [pattern$]
+DIR n
+DIR = path$
+```
+
+Lists the directory. With no argument it lists the current drive to the
+screen; a pattern selects matching names, and `#stream` sends the listing
+elsewhere — `DIR #16` captures it into a string (see `RECORD`).
+
+`DIR n` lists drive *n*. `DIR = path$` sets the current sub-directory
+(**`[MD]`**).
+
+```basic
+DIR
+DIR "m*"
+DIR #3                    : REM to the printer
+DIR = "letters"
+```
 
 ### `DISPLAY`
 
@@ -679,17 +736,32 @@ DUMP
 DUMP CHR$
 ```
 
-Screen dump to the printer — text, or graphics with `CHR$`. Both go through
-the `DMPV` vector (23258), and **do nothing at all** if no printer driver is
-installed there. The ROM contains none.
+Screen dump to the printer. Both forms go through the `DMPV` vector (23258),
+and **do nothing at all** if no printer driver is installed there — the ROM
+contains none.
 
-### `DVAR` — **DOS**
+The two forms are equivalent in practice: both enter the driver with A = &AF,
+the "graphics" value. The ROM source labels the `CHR$` branch a text copy but
+does not implement it that way; A = 0 reaches the driver only through the
+`JTCOPY` jump-table entry at &015D.
+
+### `DVAR` — **`[DOS]`**
 
 ```
 DVAR n
 ```
 
-The value of DOS variable *n*.
+The **address** of DOS variable *n* — the DOS's equivalent of `SVAR`, so it
+is used the same way:
+
+```basic
+POKE  DVAR 15, 2                : REM MasterDOS: default drive
+DPOKE DVAR 151, 0               : REM MasterBASIC: silence the warning BEEP
+```
+
+The variables themselves are the DOS's own, and the numbering differs between
+SAMDOS 2 and MasterDOS beyond about index 7. See
+[dos-and-extensions.md §4.6](../dos-and-extensions.md#46-dvar).
 
 ---
 
@@ -739,7 +811,7 @@ written as a procedure work more than once.
 
 Error 13, *No END PROC*, if a definition has none.
 
-### `EOF` — **DOS**
+### `EOF` — **`[DOS]`**
 
 ```
 EOF #stream
@@ -747,9 +819,23 @@ EOF #stream
 
 Non-zero at the end of the file attached to *stream*.
 
-### `ERASE` — **DOS**
+### `ERASE` — **`[DOS]`**
 
-Delete a file.
+```
+ERASE [OVER] "name"
+```
+
+Deletes a file. `OVER` suppresses the confirmation prompt. The name may
+include wildcards, so `ERASE "*.bak"` removes a set of files.
+
+Erasing frees the file's sectors in the disk's sector-allocation map and
+clears its directory entry; the data itself is not overwritten. See
+[chapter 11](11-data-files-and-devices.md#118-disk-operations-and-the-filesystem).
+
+```basic
+ERASE "oldfile"
+ERASE OVER "temp*"
+```
 
 ### `EXIT IF`
 
@@ -844,10 +930,28 @@ matching `NEXT`; if there is none you get error 6, *FOR without NEXT*.
 FOR i = 10 TO 1 STEP -1: PRINT i: NEXT i
 ```
 
-### `FORMAT` — **DOS**
+### `FORMAT` — **`[DOS]`**
 
-Format a disk. Note that `LIST FORMAT n` uses the same keyword for an
-unrelated purpose and does work without a DOS.
+```
+FORMAT [drive]
+FORMAT "name"
+FORMAT TO "name"
+FORMAT "source" TO "destination"
+```
+
+Formats a disk and gives it a name. `FORMAT TO "name"` re-labels a disk that
+is already formatted, without erasing it; the two-name form formats and then
+copies. A drive number selects which drive to use.
+
+Formatting writes the track and sector structure, an empty directory and an
+empty sector-allocation map. Everything previously on the disk is lost.
+
+```basic
+FORMAT "work disk"
+FORMAT TO "renamed"
+```
+
+The keyword is also used, unrelatedly, by the ROM in `LIST FORMAT n`.
 
 ### `FREE`
 
@@ -943,9 +1047,23 @@ HEX$ n
 PRINT HEX$ 255        : REM FF
 ```
 
-### `HIDE` — **DOS**
+### `HIDE` — **`[DOS]`**
 
-Make a file invisible.
+```
+HIDE [OFF] "name"
+```
+
+Sets the hidden attribute on a file so that it does not appear in a `DIR`
+listing. `HIDE OFF "name"` clears it again. The file is otherwise unaffected
+and still loads normally.
+
+The attribute lives in the file's directory entry, in the same byte as the
+protect flag.
+
+```basic
+HIDE "secret"
+HIDE OFF "secret"
+```
 
 ---
 

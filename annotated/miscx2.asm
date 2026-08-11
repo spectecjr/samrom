@@ -310,7 +310,7 @@ POSFIRST:   PUSH DE                     ; Where the word begins in the line
 
 YGOTM:      EX DE,HL                    ; HL = the word's start, DE just past it, both in the scratch copy
             AND A
-            SBC HL,DE                   ; The negated length
+            SBC HL,DE                   ; The length of the matched word
             POP DE                      ; The word's position in the line
             ADD HL,DE
             EX DE,HL                    ; HL -> the start in the line, DE -> just past it

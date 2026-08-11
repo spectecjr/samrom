@@ -298,10 +298,16 @@ KEY:       CALL SYNTAX8
 ; ---------------------------------------------------------------------------------------------------------------------
 ; SLDEVICE -- DEVICE, selecting where SAVE and LOAD go
 ;
-; Accepts a letter and an optional number: DEVICE M:, DEVICE T:, DEVICE N:, DEVICE M2, or DEVICE T45 to set the tape
-; speed. The letter and number are stored in PSLD for the file routines to consult.
+; Accepts a letter and an optional number: DEVICE T:, DEVICE N:, DEVICE D2, or DEVICE T45 to set the tape speed.
+; The letter and number are stored in PSLD for the file routines to consult.
+;
+; Any letter is accepted. Only N (network) and T (tape) are special-cased here; everything else defaults its number
+; to 1 and is left for the DOS to interpret, which uses D for a disk drive.
 ;
 ; Defaults: a network station number of 0, the standard tape speed, and drive 1 for a disk.
+;
+; Note:   The original comment gives the disk examples as "DEVICE M:" and "DEVICE M2". No SAM DOS uses M -- both
+;         SAMDOS 2 and MasterDOS take D, as in DEVICE D2 and the "D1:name" file-name prefix.
 ; ---------------------------------------------------------------------------------------------------------------------
 
 SLDEVICE:  CALL GETALPH

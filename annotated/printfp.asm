@@ -52,7 +52,8 @@
 ;
 ; Exit:   DE -> PRNBUFF, BC = the length.
 ;
-; PFSTRSC is the same entry with a caller-chosen FRACLIM, used by PRINT USING.
+; PFSTRSC is the same entry with a caller-chosen FRACLIM. Nothing in the ROM calls it and it is not in the jump
+; table, so FRACLIM is effectively fixed at 6: PFSTRS rewrites it on every call.
 ; ---------------------------------------------------------------------------------------------------------------------
 
 PFSTRS:    LD A,6                           ; Up to four leading zeros in a fraction before exponent form is used

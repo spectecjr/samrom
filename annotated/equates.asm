@@ -508,7 +508,8 @@ FNBUFFILL:      EQU &FE         ; Filler byte marking an unresolved FN call buff
 PROCBUFFILL:    EQU &FD         ; Filler byte marking an unresolved PROC call buffer
 CALLBUFOK:      EQU &80         ; Set in the page byte once the compile pass has resolved the buffer
 CALLBUFBAD:     EQU %00100000   ; Set in the page byte when no matching definition was found
-CALLBUFEXT:     EQU %01000000   ; Set when the target is an external command rather than a DEF PROC
+CALLBUFEXT:     EQU %01000000   ; Would mark the target as an external command rather than a DEF PROC. Never set or
+                                ; tested by the ROM; see docs/extending-basic.md and docs/dos-and-extensions.md.
 
 PROGTERM:       EQU &FF         ; Byte marking the end of the program (where a line-number MSB would be)
 VARSTERM:       EQU &FF         ; Byte marking the end of the string/array area

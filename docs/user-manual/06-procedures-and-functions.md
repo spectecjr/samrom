@@ -251,21 +251,20 @@ over.
 
 ## 6.7 External commands
 
-A statement beginning with a full stop is an **external command**: a call
-into code supplied by a DOS or a utility rather than into a `DEF PROC`.
+You may see references to **external commands** — statements beginning with
+a full stop, calling into code supplied by something other than a `DEF PROC`.
 
-```basic
-.dir
-```
+**Nothing in SAM BASIC provides them.** The ROM does not recognise `.` at the
+start of a statement: `PROCS` calls `GETALPH`, which accepts only `A`–`Z` and
+`a`–`z`, so a leading full stop gives *Not understood*. Neither SAMDOS 2 nor
+MasterDOS adds the ability either. There is a system variable, `XCMDP`,
+reserved for "the first external command list", but no ROM code ever reads
+it, and neither DOS populates it.
 
-The ROM itself has no part in this. It does not recognise `.` at the start of
-a statement — a bare machine gives *Not understood* — and although there is a
-system variable named `XCMDP` reserved for "the first external command list",
-no ROM code ever reads it. External commands are entirely a convention built
-on the `CMDV` vector, which sees every statement before the ROM dispatches it.
-
-[extending-basic.md](../extending-basic.md#9-worked-example-4--external-commands)
-implements the mechanism from scratch if you want your own.
+So a dot command only works if some later utility has claimed the `CMDV`
+vector and implemented one. If you want that,
+[extending-basic.md](../extending-basic.md#9-external-commands) builds the
+mechanism from scratch.
 
 ## 6.8 Executing generated code — `KEYIN`
 

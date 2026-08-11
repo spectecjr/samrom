@@ -21,6 +21,9 @@ Companion documents:
 - [extending-basic.md](extending-basic.md) — the `MTOKV`/`CMDV`/`RST28V`/
   `PRTOKV` hooks, the free token budget, and worked examples of new commands,
   functions, operators and external commands.
+- [dos-and-extensions.md](dos-and-extensions.md) — what SAMDOS 2, MasterDOS
+  and MasterBASIC add, how each attaches itself to the ROM, and the extended
+  token map.
 - [file-formats.md](file-formats.md) — the saved-file header and how a BASIC
   program is encoded on tape/disc.
 - [font-rendering.md](font-rendering.md) — character cell geometry, and which
@@ -1202,7 +1205,7 @@ past the destination. INSLV offers a vector hook.
 | Entry point | Description |
 |---|---|
 | [VALFET1 / VALFET2](#valfet1) | Evaluate the right-hand side, insist its type matches FLAGS, then ASSIGN if running |
-| [ASSIGN / ASSISR](#assign-1) | Store the FP-stack top into the variable described by DEST/DESTP/FLAGX/STRLEN |
+| [ASSIGN / ASSISR](#assign) | Store the FP-stack top into the variable described by DEST/DESTP/FLAGX/STRLEN |
 | `ASENV`/`ASNN` | Overwrite an existing numeric / create a new numeric at NUMEND (linking it into its letter chain, opening 512 bytes if the gap is tight) |
 | [ASSTR / ASDEL / ASNST](#asstr) | Assign to an existing string (copy + space-pad into the fixed-length slot, or delete-and-recreate for simple strings) / create a new string at the end of SAVARS |
 | `ASDEL2`/`ASDEL3`/`ADD14` | Delete a string/array record (data + 14-byte header) |
@@ -1655,7 +1658,7 @@ the result expression after `=` is type-checked against the FN name's type.
 
 #### TOKPT2 (the tokenizer)
 The full algorithm is documented in
-[tokenized-program-format.md](tokenized-program-format.md#the-tokenizer).
+[tokenized-program-format.md](tokenized-program-format.md#2-the-tokenizer).
 In brief: scan the line; at each candidate word start (letter, `<`, `>`)
 copy up to 15 characters to a scratch buffer and match against the keyword
 table with GETTOKEN (plus the MTOKV user hook); on a match write either a
@@ -2103,7 +2106,7 @@ into SAVARS.
 |---|---|
 | [SABLK / SABYTES](#sablk) | Save a block of CDE bytes from HL to tape: leader (speed-compensated cycle count), sync, type byte, data with border stripes, parity |
 | [LDBLK / LDBYTES](#ldblk) | Load/verify a tape block: leader detection, sync hunt, speed measurement (self-adjusting to the recorded TSPEED), bit slicing, parity check |
-| [EDGEC](#edgec) | (tadjm.asm's EDGE2 partner) — double-edge timing used by LDBLK |
+| [EDGEC](#edge2) | (tadjm.asm's EDGE2 partner) — double-edge timing used by LDBLK |
 | `WNF`/`WNH`/`NIXJ` | Net save/load of a block with parity (station addressing via OTHER) |
 | `NMOUT`/`NMIN` | Single byte out/in on the net/MIDI port with timing |
 | `CKNET` | Wait for the net to fall quiet before transmitting |

@@ -275,7 +275,8 @@ through the **vector table** — nineteen routine addresses in the system
 variables, each called only if it is non-zero. `MTOKV` sees every word the
 tokeniser fails to match, `CMDV` every statement before it is dispatched,
 `RST28V` every calculator opcode, and `PRTOKV` every token before it is
-listed. External commands (`.name`) are built on `CMDV` too.
+listed. External commands (`.name`) would be built on `CMDV` too — nothing in
+the ROM or either DOS provides them.
 
 Chapter 15 summarises them; [extending-basic.md](../extending-basic.md) gives
 the exact contracts and four complete worked examples.

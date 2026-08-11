@@ -8,10 +8,10 @@
 
 | Codes | Contents |
 |---|---|
-| 0–5 | Inserted literally by the editor; no printing effect |
-| 6–15 | Control codes with no operands |
+| 0–5 | Editor: inserted literally. Printed: emit `?` |
+| 6–15 | Editor keys. Printed: 6 and 8–14 act, 7 and 15 emit `?` |
 | 16–23 | Control codes taking operands |
-| 24–31 | Unused |
+| 24–31 | Not control codes — printed, they emit `?` |
 | 32–126 | ASCII |
 | 127 | Copyright sign |
 | 128–143 | Block graphics, or UDGs when `BLOCKS 0` is in force |
@@ -24,10 +24,17 @@ characters; when listing a program outside quotes they expand to keywords.
 
 ## C.2 Control codes
 
+**Two different contexts.** A code below 32 means one thing to the *editor*,
+which is reading keystrokes, and another to the *print* routine. They agree
+for 8–14 and 16–23. Elsewhere they differ: the editor acts on 7 (EDIT) and 15
+(keypad toggle) and inserts 0–5 literally, whereas printing any of 0–5, 7, 15
+or 24–31 produces a `?`. The table below is the print behaviour, which is
+what `CHR$` gives you; chapter 2 covers the editor side.
+
 | Code | Operands | Effect |
 |---|---|---|
 | 6 | — | Column tab (what `,` does in `PRINT`) |
-| 7 | — | EDIT |
+| 7 | — | EDIT — *editor only*; printed it gives `?` |
 | 8 | — | Cursor left |
 | 9 | — | Cursor right |
 | 10 | — | Cursor down |
@@ -35,7 +42,7 @@ characters; when listing a program outside quotes they expand to keywords.
 | 12 | — | Delete left |
 | 13 | — | Carriage return |
 | 14 | — | Delete right |
-| 15 | — | Keypad toggle |
+| 15 | — | Keypad toggle — *editor only*; printed it gives `?` |
 | 16 | 1 | `INK` |
 | 17 | 1 | `PAPER` |
 | 18 | 1 | `FLASH` |

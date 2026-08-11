@@ -5,7 +5,27 @@
 ---
 
 Jump to: [M](#m) · [N](#n) · [O](#o) · [P](#p) · [R](#r) · [S](#s) ·
-[T](#t) · [U](#u) · [V](#v) · [W](#w) · [X](#x) · [Y](#y) · [Z](#z)
+[T](#t) · [U](#u) · [V](#v) · [W](#w) · [X](#x) · [Y](#y) · [Z](#z) ·
+[Extensions](#keywords-added-by-the-extensions)
+
+Every keyword here is in the ROM's own keyword table. A tag on the heading
+means the ROM tokenises and lists the word but has no implementation for it:
+it gives *Not understood* (29) until the tagged product is loaded.
+
+| Tag | Needs |
+|---|---|
+| **`[DOS]`** | Any disk operating system |
+| **`[SD2]`** | SAMDOS 2 |
+| **`[MD]`** | MasterDOS |
+| **`[MB]`** | MasterBASIC |
+
+Where a keyword is marked **reserved**, nothing uses it — not the ROM, and
+not any of the three extensions. `WRITE` and `OFF` look reserved from the
+ROM's side but are both claimed by the DOSes.
+
+Keywords that are not in the ROM's table at all are summarised at the
+[end of this file](#keywords-added-by-the-extensions) and covered in full by
+[dos-and-extensions.md](../dos-and-extensions.md).
 
 ---
 
@@ -73,9 +93,22 @@ mode*.
 Clears the screen, rebuilds the pixel expansion tables and resets the
 windows. Function key F3 types `MODE`.
 
-### `MOVE` — **DOS**
+### `MOVE` — **`[MD]`**
 
-Move a file.
+```
+MOVE "source" TO "destination"
+```
+
+Moves a file, copying it and erasing the original. The two names may be on
+different drives, in which case the data is transferred; on the same drive
+only the directory entry changes.
+
+Reserved for a DOS by the ROM. SAMDOS 2 does not implement it — MasterDOS
+does.
+
+```basic
+MOVE "1:report" TO "2:report"
+```
 
 ---
 
@@ -119,9 +152,11 @@ you want, but `NOT a AND b` is `(NOT a) AND b`.
 
 ## O
 
-### `OFF` — **reserved**
+### `OFF` — **`[DOS]`**
 
-Tokenised but never used by the ROM.
+Tokenised by the ROM as a qualifier but never used by it. Both SAMDOS 2 and
+MasterDOS use it to *clear* a file attribute, as `PROTECT OFF "name"` and
+`HIDE OFF "name"`.
 
 ### `ON`
 
@@ -169,18 +204,27 @@ procedure works every time.
 
 ```
 OPEN #stream, channel$
+OPEN #stream; "filename" [IN | OUT | RND]     [DOS]
+OPEN DIR "name"                               [MD]
+OPEN BLOCKS n                                 [MB]
 OPEN SCREEN n, mode
 OPEN n
 OPEN TO n
 ```
 
-* `OPEN #s, "x"` attaches a stream to a channel. The name must be a single
-  character — `k`, `s`, `p`, `$` or `b`. Anything longer or different is
-  passed to DOS.
-* `OPEN SCREEN n, mode` allocates two consecutive pages for a new screen and
-  initialises it.
-* `OPEN n` reserves *n* more 16K pages for BASIC.
-* `OPEN TO n` reserves or releases so that exactly *n* are owned.
+* `OPEN #s, "x"` attaches a stream to a built-in channel. The name must be a
+  single character — `k`, `s`, `p`, `$` or `b`. Anything longer or different
+  is passed to the DOS.
+* **`[DOS]`** `OPEN #s; "name" OUT` creates a serial (OPENTYPE) file and
+  attaches the stream to it; `IN` opens an existing one for reading, and
+  `RND` (**`[MD]`**) opens it for random access. See
+  [chapter 11](11-data-files-and-devices.md#118-disk-operations-and-the-filesystem).
+* **`[MD]`** `OPEN DIR "name"` creates a sub-directory.
+* **`[MB]`** `OPEN BLOCKS n` pre-allocates *n* file buffers so that later
+  `OPEN`s do not move the BASIC program.
+* `OPEN SCREEN n, mode` allocates two consecutive pages for a new screen.
+* `OPEN n` reserves *n* more 16K pages for BASIC; `OPEN TO n` reserves or
+  releases so that exactly *n* are owned.
 
 `OPEN #16` is not permitted — use `RECORD`.
 
@@ -189,6 +233,11 @@ OPEN TO n
 | 45 | *Stream is already open* |
 | 44 | *Screen is already open* |
 | 1 | *Out of memory* — no free pages |
+
+```basic
+OPEN #4, "s"
+OPEN #5; "results" OUT
+```
 
 ### `OR`
 
@@ -274,7 +323,7 @@ and 17 (contrasting). 18 or more gives error 23.
 
 In modes 1 and 2, values above 7 select the colour minus 8 with `BRIGHT 1`.
 
-### `PATH$` — **DOS**
+### `PATH$` — **`[DOS]`**
 
 ```
 PATH$
@@ -412,11 +461,25 @@ PRINT #3; "to the printer"
 
 Function key F2 types `PRINT :`.
 
-### `PROTECT` — **DOS**
+### `PROTECT` — **`[DOS]`**
 
-Protect a file.
+```
+PROTECT [OFF] "name"
+```
 
-### `PTR` — **DOS**
+Sets the protect attribute on a file, so that it cannot be erased or
+overwritten. `PROTECT OFF "name"` clears it again.
+
+The attribute lives in the file's directory entry, in the same byte as the
+hidden flag. Use `FSTAT("name",4)` to read both (**`[MD]`**): the file type
+plus 64 if protected, plus 128 if hidden.
+
+```basic
+PROTECT "master"
+PROTECT OFF "master"
+```
+
+### `PTR` — **`[DOS]`**
 
 ```
 PTR #stream
@@ -529,9 +592,22 @@ REM anything at all
 A comment. **Tokenising stops for the rest of the line**, so everything after
 `REM` is stored exactly as typed and no keyword in it is turned into a token.
 
-### `RENAME` — **DOS**
+### `RENAME` — **`[DOS]`**
 
-Rename a file.
+```
+RENAME "old" TO "new"
+RENAME TO "diskname"
+```
+
+Renames a file. The second form, with no source name, renames the **disk**
+itself rather than a file.
+
+Only the directory entry changes; no data is moved.
+
+```basic
+RENAME "draft" TO "final"
+RENAME TO "Backups 1993"
+```
 
 ### `RENUM`
 
@@ -1013,9 +1089,10 @@ WINDOW 4, 27, 2, 16
 PAPER 1: CLS 1
 ```
 
-### `WRITE` — **reserved**
+### `WRITE` — **`[SD2]`** **`[MD]`**
 
-Tokenised but never used by the ROM.
+Tokenised by the ROM as a qualifier but never used by it. Both DOSes claim it
+as a command, for writing to a record file.
 
 ---
 
@@ -1098,6 +1175,83 @@ priority order. The full discussion is in
 | 4 | `NOT` |
 | 3 | `AND`, `BAND` |
 | 2 | `OR`, `BOR` |
+
+---
+
+## Keywords added by the extensions
+
+None of these exist in ROM 3.0. They are listed here so that a keyword met in
+someone else's program can be identified; the syntax is from the products'
+own documentation and has not been verified against them.
+[dos-and-extensions.md](../dos-and-extensions.md) has the detail, including
+token values and how each product attaches itself to the ROM.
+
+| Tag | Needs |
+|---|---|
+| **`[DOS]`** | Any disk operating system |
+| **`[SD2]`** | SAMDOS 2 |
+| **`[MD]`** | MasterDOS |
+| **`[MB]`** | MasterBASIC |
+
+### Commands
+
+| Keyword | | Purpose |
+|---|---|---|
+| `ALTER` *(ref)* `TO` *(ref)* | **`[MB]`** | Search and replace through the program |
+| `ALTER DEVICE` *drive* `TO` *drive* | **`[MB]`** **`[MD]`** | Reassign a drive |
+| `ALTER DISPLAY` *n* `TO` *n* `LINE` *n* | **`[MB]`** | Split-mode display |
+| `BACKUP` | **`[MD]`** | Copy a whole disk |
+| `BLITZ SOUND` *a$* | **`[MB]`** | Replay recorded sound |
+| `BLOCKS 2` | **`[MB]`** | A third block-graphics mode, giving extra UDGs |
+| `CLS *` | **`[MB]`** | Clear to black on white |
+| `COPY SCREEN` *n* `TO` *n* | **`[MB]`** | Copy between screens |
+| `DATE` | **`[MD]`** | Set the date |
+| `DIR` | **`[DOS]`** | Directory listing |
+| `EDIT` *variable* | **`[MB]`** | Edit a variable's value |
+| `ERASE` | **`[DOS]`** | Delete a file |
+| `FORMAT` | **`[DOS]`** | Format a disk |
+| `HIDE` | **`[DOS]`** | Make a file invisible |
+| `JOIN` | **`[MB]`** | Join two program lines |
+| `JOIN TO` *a$*`,`*b$* | **`[MB]`** | Append one string or string array to another |
+| `MERGE *` | **`[MB]`** | Faster `MERGE` |
+| `MOVE` | **`[MD]`** | Move a file |
+| `PROTECT` | **`[DOS]`** | Protect a file |
+| `READ` *(record files)* | **`[SD2]`** **`[MD]`** | Read a record file |
+| `RECORD SOUND TO` *a$* | **`[MB]`** | Record sound-chip output into a string |
+| `RECORD SOUND OFF` / `STOP` | **`[MB]`** | End a sound recording |
+| `RENAME` | **`[DOS]`** | Rename a file |
+| `SAVE MODE` *n* | **`[MB]`** | Save with compression, 1 to 3 |
+| `SORT` *a$* | **`[MB]`** | Sort a string or string array; also `SORT ABS` and `SORT ABS INVERSE` |
+| `SOUND CLEAR` *[size]* | **`[MB]`** | Allocate or free the sound buffer |
+| `TIME` | **`[MD]`** | Set the time; `TIME +` and `TIME -` adjust it |
+| `WRITE` | **`[SD2]`** **`[MD]`** | Write a record file |
+| `EXIT PROC` / `EXIT DO` / `EXIT FOR` | **`[MB]`** | Leave a procedure or loop early |
+
+### Functions
+
+| Keyword | | Result |
+|---|---|---|
+| `DATE$` | **`[MD]`** | The date as text |
+| `DIR$` | **`[MD]`** | Directory entry as text |
+| `DSTAT` | **`[MD]`** | Disk status |
+| `EQU(`*a$*`,`*b$*`)` | **`[MB]`** | Case-insensitive string comparison |
+| `FPAGES` | **`[MD]`** | Free pages |
+| `FSTAT` | **`[MD]`** | File status |
+| `INARRAY(`*a$(n)*`,`*target$*`)` | **`[MB]`** | Search a string array |
+| `INP$` | **`[MD]`** | Serial input |
+| `LOCN(`*start*`,`*length*`,`*a$*`)` | **`[MB]`** | Search memory for a string; `,ABS` for a case-insensitive search |
+| `NVAL` *a$* | **`[MB]`** | Convert a compact `SVAL$` string back to a number |
+| `RESERVED(`*space*`)` | **`[MB]`** | Reserve heap space; a negative value releases it |
+| `SCRAD` | **`[MB]`** | Screen address |
+| `SHIFT$(`*a$*`,`*n*`)` | **`[MB]`** | Change the capitalisation of a string |
+| `SVAL$(`*number*`,`*characters*`)` | **`[MB]`** | Convert a number to a compact 2–5 character string |
+| `TICS` | **`[MB]`** **`[MD]`** | Elapsed time — needs a clock |
+| `TIME$` | **`[MD]`** | The time as text |
+| `USING$(`*format$*`,`*number*`)` | **`[MB]`** | Format a number to a fixed layout |
+| `XVAR` *n* | **`[MB]`** | Address of MasterBASIC system variable *n* |
+
+`DVAR` *n* is in the ROM's keyword table but only works with a DOS; it
+returns the address of DOS variable *n*, so it is used like `SVAR`.
 
 ---
 

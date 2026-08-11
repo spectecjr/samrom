@@ -9,7 +9,7 @@
 ;   &0000-&007F   The eight Z80 restarts, the maskable interrupt entry at &0038 and the NMI entry at &0066, packed
 ;                 in among a handful of one- and two-instruction helpers that fill the gaps between them.
 ;   &0080-&00FF   The floating point calculator entry taken by RST &28, and the paging helper it returns through.
-;   &0100-&0192   The public jump table: fixed entry points that external code (a DOS, a utility, machine code
+;   &0100-&018F   The public jump table: fixed entry points that external code (a DOS, a utility, machine code
 ;                 called from BASIC) can rely on across ROM versions.
 ;   Onwards       The inter-ROM call mechanism, string output, and the initial stream table.
 ;

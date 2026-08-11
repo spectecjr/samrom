@@ -40,16 +40,22 @@
 
 
 ; ---------------------------------------------------------------------------------------------------------------------
-; COPY -- COPY, or COPY SCREEN$
+; COPY -- the DUMP command: DUMP, or DUMP CHR$
 ;
-; Both forms go through a vector, DMPV, so a printer driver can install itself. A is 0 for a text copy and &AF for a
-; graphics copy; if no vector is installed the command does nothing.
+; Reached from CMDADT entry &BF, which is the DUMP token; the COPY token &CF dispatches to NONSENSE and is left for
+; a DOS. Both forms go through the DMPV vector, so a printer driver can install itself; with no vector installed the
+; command does nothing at all.
+;
+; Notes:  The original source labels the CHR$ branch "TEXT COPY", but the code does not implement that: the branch
+;         falls through into GRCOPY and then into JGCOPY, whose DB &3E swallows the following XOR A, so BOTH forms
+;         enter the vector with A = &AF (graphics). A = 0 is only ever reached through the JTCOPY jump-table entry
+;         at &015D. Presumably the CHR$ branch was meant to "JR JTCOPY". Behaviour is as written, not as labelled.
 ; ---------------------------------------------------------------------------------------------------------------------
 
 COPY:      CP &FF
            JR NZ,GRCOPY
 
-; --- COPY SCREEN$ ---
+; --- DUMP CHR$: the token after the &FF prefix must be CHR$ (&70) ---
 
            RST &20                          ; Step over the &FF function prefix
            CP CHRSTOK

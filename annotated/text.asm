@@ -486,8 +486,9 @@ CAR:       EQU 31
 ; system variable pointing at USR "A". That takes 328 bytes of RAM. The overlap with command tokens is resolved by
 ; context: PRINT CHR$ 160 gives a UDG, LIST of a command gives the keyword, and quotes force UDGs.
 ;
-; Codes &80-&95 are allowed in PROC names, so a face symbol can be a command name. "." introduces an external
-; command.
+; The original source notes two ideas here that were never implemented: allowing codes &80-&95 in PROC names "so a
+; face symbol can be a command name?" (its own question mark), and using "." to introduce an external command.
+; GETALPH accepts only A-Z and a-z, so neither works in the shipped ROM.
 ; =====================================================================================================================
 
 KEYWTAB:      DB &A0            ; Lead byte: the table proper starts at the next byte

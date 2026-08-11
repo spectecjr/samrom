@@ -35,7 +35,7 @@ Sources: [mainlp.asm](../mainlp.asm) (`STMTLP3`, `LINESCAN`), [eval.asm](../eval
    * [9.4 Route B — DEF PROC-style calling buffers](#94-route-b--def-proc-style-calling-buffers)
    * [9.5 XCMDP — a chainable registry](#95-xcmdp--a-chainable-registry)
    * [9.6 How a resident DOS does it differently](#96-how-a-resident-dos-does-it-differently)
-   * [9.7 B-DOS and dot commands](#97-b-dos-and-dot-commands)
+   * [9.7 What the real DOSes actually do](#97-what-the-real-doses-actually-do)
 10. [Chaining, uninstalling and surviving NEW](#10-chaining-uninstalling-and-surviving-new)
 11. [Checklist and pitfalls](#11-checklist-and-pitfalls)
 
@@ -134,6 +134,11 @@ there, even if it immediately pages something else in.
 95 bytes is enough for one small hook (example 1 is 53 bytes) and nothing
 more.
 
+> **Neither hole is reliably free in practice.** MasterDOS installs vector
+> stubs at **&4BA0** *and* at **&5896**, inside the 95-byte hole. An
+> extension meant to coexist with it must claim space some other way — see
+> [dos-and-extensions.md §2.3](dos-and-extensions.md#23-vectors--masterdos-only).
+
 ### Carving as much room as you need
 
 `PROG` (23200) holds the start of the BASIC program area, and nothing outside
@@ -210,10 +215,21 @@ meets the two-byte function prefix &FF.
 | **To decline** | `RET` with `A` unchanged |
 | **To re-map** | `RET` with a different internal code in **both `A` and `E`** — `A` selects the dispatch path, `E` becomes the operation the calculator will be given |
 
-`EVALUV` is a *remapping* hook, not an implementation hook: the evaluator's
-continuation points (`NUMCONT`, `STRCONT`) are not published, so a hook
-cannot leave a value stacked and rejoin the scan. Implement the work in
-`RST28V` instead and let the evaluator queue it — that is what §8 does.
+The simple use of `EVALUV` is *remapping*: change the code and let the ROM
+dispatch it. Implementing a function here is harder, because the evaluator's
+continuation points (`NUMCONT`, `STRCONT`) are not published — a hook that
+takes over has nowhere documented to rejoin the scan. For most purposes,
+implement the work in `RST28V` instead and let the evaluator queue it, which
+is what §8 does.
+
+It *can* be done, though, and MasterDOS does it: it recovers `NUMCONT` and
+`STRCONT` at run time by walking the ROM from the return address the vector
+was called with, then overwrites the return address on the stack with
+whichever suits the result type. That also lifts the restriction on which
+codes you may use — MasterDOS and MasterBASIC put their functions **below**
+`PI` (&3B), a range the evaluator otherwise rejects outright, so they never
+compete with the ROM's own codes or its fixed type signatures. See
+[dos-and-extensions.md §4.4](dos-and-extensions.md#44-evaluv-and-how-masterdos-rejoins-the-evaluator).
 
 ### 3.3 `RST28V` — the floating-point calculator (23280)
 
@@ -392,6 +408,12 @@ does. All follow the same "zero means not installed" convention.
 Claiming a token that already has a spelling is far the easiest route: the
 tokeniser and the lister already work, and you need only `CMDV`.
 
+> **In practice the range is nearly exhausted.** A DOS implements all eight
+> reserved spellings; MasterDOS takes &F7–&F9 for `BACKUP`, `TIME` and
+> `DATE`, and MasterBASIC &FA–&FD for `ALTER`, `SORT`, `JOIN` and `EDIT`. On
+> a fully-loaded machine only **&D0 and &FE** remain. See
+> [dos-and-extensions.md §6.3](dos-and-extensions.md#63-command-tokens).
+
 ### Function codes
 
 The evaluator subtracts &1A from the stored code, then routes it:
@@ -413,10 +435,33 @@ Which leaves:
 | &75 | &5B | **Taken** — opcode &5B is `INKEY$ #n`, which the evaluator queues for the stream form of `INKEY$` |
 | &77–&79 | &5D–&5F | **Unusable** — the evaluator rejects internal codes of &5D and above |
 
-So there are exactly **two** free function slots, and their argument and
-result types are fixed by the ROM's priority tables. You cannot choose them,
-and you cannot write a function that takes no argument or more than one —
-for those, use a command, or a bracketed syntax parsed by a `CMDV` hook.
+So within the ROM's own range there are exactly **two** free function slots,
+and their argument and result types are fixed by the ROM's priority tables.
+You cannot choose them, and you cannot write a function that takes no
+argument or more than one — for those, use a command, or a bracketed syntax
+parsed by a `CMDV` hook.
+
+**Both are taken on a machine with MasterBASIC**, which puts `XVAR` at &68
+and `NVAL` at &6A — matching those fixed signatures exactly.
+
+### Escaping the range entirely
+
+Stored codes **below &3B** are rejected by the evaluator before any table is
+consulted, which makes the whole range &21–&3A invisible to the ROM and
+available to an `EVALUV` hook that is prepared to rejoin the scan itself
+(§3.2). This is what MasterDOS and MasterBASIC do, and it is why they can
+have nineteen functions between them without ever colliding with the ROM:
+
+| Range | Used by |
+|---|---|
+| &26–&2F | MasterBASIC |
+| &30–&36 | MasterDOS |
+| &37–&38 | MasterBASIC |
+| &39–&3A | still free |
+
+The cost is the ROM-walking technique in
+[dos-and-extensions.md §4.4](dos-and-extensions.md#44-evaluv-and-how-masterdos-rejoins-the-evaluator);
+the benefit is that you choose your own argument and result types.
 
 ### Operator codes
 
@@ -427,6 +472,9 @@ for those, use a command, or a bracketed syntax parsed by a `CMDV` hook.
 Because &0B is below the `AND` code (&0E), the evaluator rejects `$ op $`
 for it at syntax-check time, which is the correct behaviour for a bitwise
 operator.
+
+Neither MasterDOS nor MasterBASIC claims &7D, so it is one of the few slots
+still free on a fully-loaded machine.
 
 ---
 
@@ -2009,44 +2057,47 @@ it.** An `RST8V` hook still runs first, so trapping error 12 works either
 way — but a hook that declines will find the DOS may handle the error
 differently from the bare ROM.
 
-### 9.7 B-DOS and dot commands
+### 9.7 What the real DOSes actually do
 
-**I have not been able to verify how B-DOS implements dot commands.** This
-repository contains the ROM sources and a set of ROM images only — no DOS
-source, and no DOS binary to disassemble. Everything in §9.1–9.6 is derived
-from the ROM side of the interface, which constrains what any DOS can do but
-does not tell us what a particular one chose.
+The SAMDOS 2 and MasterDOS sources settle most of the questions §9.1–9.6
+could only frame. [dos-and-extensions.md](dos-and-extensions.md) covers both
+in detail; the findings that bear on this document are:
 
-What the ROM side does establish, and which any DOS's implementation must fit:
+**Neither uses `XCMDP`.** The system variable is left at its "none" value.
+The §9.5 format is therefore a proposal with no competing standard — but
+also with no existing practice behind it.
 
-* A DOS is entered at **&4200** (hook codes ≥ 128) and **&4203** (errors),
-  with its own page in section B and its own stack. Both are reached only
-  through `RST &08`.
-* It therefore sees **error 12** without needing `RST8V`, which makes the
-  route-B design of §9.4 the natural one for a DOS: no dot required, and
-  the ROM's own calling buffers carry the resolved address.
-* Equally it can claim `CMDV` and recognise `.` directly, as in §9.3. Nothing
-  stops a DOS doing both.
-* Whichever it chooses, the three facilities the ROM built for this —
-  bit 6 of the call buffer page byte, `TSURPG` paging the code in, and
-  `XCMDP` — are available and cost nothing to use.
+**Neither uses `RST8V`, and neither uses the calling buffers.** Both trap
+**error 29** (*Not understood*) at their `&4203` error entry, reset `CHAD`
+from `CSTAT` to the start of the statement, and dispatch on the command
+token. So the route-B design of §9.4 is a legitimate reading of the ROM
+authors' comments, but it is not what was built — a DOS gets a better
+position from `PTDOS` than any `RST8V` hook can have, and neither DOS needed
+the buffers to get acceptable speed.
 
-The open questions that only the source can answer are:
+**Both provide an external-syntax vector of their own**, called when the
+error-29 trap finds nothing it recognises. SAMDOS 2 calls it `ONERR` at
+`DVAR 25`; MasterDOS calls it `ONERR` at `DVAR 33`, with a page byte at
+`DVAR 36` so the handler may live outside the system page. Either is reached
+from BASIC with `DPOKE DVAR n, handler`.
 
-1. Does B-DOS recognise `.` in `CMDV`, or does it trap error 12, or both?
-2. Does it use the ROM's calling buffers and bit 6, or its own lookup?
-3. Does it populate `XCMDP`, and if so in what format? If a real format
-   exists, §9.5's proposal should be replaced by it rather than competing
-   with it.
-4. How does a dot command loaded from disc get into memory and stay there —
-   its own page, or the DOS's?
+> **If you are adding commands to a machine that has a DOS, use its `ONERR`
+> vector rather than any of the routes in this section.** The DOS has already
+> reset `CHAD`, established a safe stack, and guarded against recursion.
+> The routes above are for a bare ROM, or for an extension that must work
+> whether or not a DOS is present.
 
-> **Yes please — if you can get hold of the B-DOS source, I would like to see
-> it.** Those four questions are answerable in an afternoon with it, and the
-> answers would turn §9.5 from a proposal into documentation of an existing
-> convention. The same applies to MasterDOS and SAMDOS if they are to hand:
-> comparing two implementations would show which parts are convention and
-> which are accident.
+**And the dot was never adopted.** Neither DOS recognises `.` at the start of
+a statement, so the design note in §9.1 remained a note. Dot commands as SAM
+users know them are a later convention layered on `ONERR` or on `CMDV`, not
+a ROM or SAMDOS/MasterDOS feature.
+
+> **B-DOS is still unexamined.** No B-DOS source or binary is available here,
+> so whether it follows the `ONERR` convention, claims `CMDV`, or does
+> something else again is unknown. If you can get hold of it, the questions
+> worth asking are: does it recognise `.` directly; does it reuse the
+> `ONERR`/`DVAR` convention the other two share; and does it populate
+> `XCMDP` after all?
 
 ---
 

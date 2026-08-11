@@ -288,7 +288,7 @@ music or a clock.
 
 | Offset | Address | Name | | Description |
 |---|---|---|---|---|
-| &019A | 23450 | `FRACLIM` | ✔ | Leading fraction zeros permitted before `E` notation (normally 6) |
+| &019A | 23450 | `FRACLIM` | ✘ | Leading fraction zeros permitted before `E` notation. **Rewritten to 6 on every number conversion**, so poking it has no effect |
 | &019B | 23451 | `NPRPOS` (2) | ✘ | Write position within the number buffer |
 | &019D | 23453 | `DIGITS` | ✘ | Significant digits still to produce |
 | &019E | 23454 | `EPOWER` | ✘ | Power of ten factored out for `E` notation |
@@ -296,8 +296,11 @@ music or a clock.
 | &01A0 | 23456 | `PRNBUFF` (16) | ○ | The assembled number text |
 | &01B0 | 23472 | `BCDBUFF` (5) | ✘ | Packed BCD digits during conversion |
 
-`FRACLIM` is the one to reach for when small numbers print as `1E-7` and you
-wanted `0.0000001`.
+`FRACLIM` looks like the one to reach for when small numbers print as `1E-7`
+and you wanted `0.0000001` — but it is not usable from BASIC. `PFSTRS`, the
+only entry point the jump table exposes, stores 6 into it before every
+conversion. Only machine code calling the secondary entry `PFSTRSC` can
+choose a different value.
 
 ## 14.11 Save, load and DOS state
 
@@ -430,7 +433,6 @@ POKE SVAR &32, 1               : REM never blank the screen
 POKE SVAR &33, 3               : REM silent tape operations
 POKE SVAR &0E, 132             : REM 132-column printer
 POKE SVAR &141, 1              : REM disable BREAK
-POKE SVAR &19A, 12             : REM print small fractions in full
 POKE 23561, 8: POKE 23562, 1   : REM fast key repeat
 POKE 23608, 0: POKE 23609, 0   : REM silence the buzz and the click
 DPOKE 23672, 0                 : REM reset the frame clock
@@ -448,7 +450,7 @@ DPOKE 23672, 0                 : REM reset the frame clock
   of the BASIC area.
 * The nineteen vectors from offset &DA are the supported way to extend or
   divert the interpreter.
-* A handful of bytes — `TABVAR`, `BREAKDI`, `FRACLIM`, `SOFE`, `TPROMPTS`,
+* A handful of bytes — `TABVAR`, `BREAKDI`, `SOFE`, `TPROMPTS`,
   `PRRHS`, `INSTHASH`, `REPDEL`/`REPPER` — give you behaviour with no command
   of its own.
 

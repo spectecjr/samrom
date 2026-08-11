@@ -29,6 +29,21 @@ gives the keyword.
 See [tokenized-program-format.md](../tokenized-program-format.md) for the
 complete stored form of a program.
 
+### Tags
+
+Everything in sections D.2 to D.4 is ROM 3.0 unless tagged. The tags mark
+keywords that only exist when an extension is loaded:
+
+| Tag | Meaning |
+|---|---|
+| **`[DOS]`** | Any disk operating system |
+| **`[SD2]`** | SAMDOS 2 |
+| **`[MD]`** | MasterDOS |
+| **`[MB]`** | MasterBASIC |
+
+[dos-and-extensions.md](../dos-and-extensions.md) covers all three in
+detail, including how each attaches itself to the ROM.
+
 ## D.2 Function and operator codes (`&FF` + code)
 
 | Code | Keyword | | Code | Keyword |
@@ -41,9 +56,9 @@ complete stored form of a program.
 | &40 | `ITEM` | | &65 | `BUTTON` |
 | &41 | `ATTR` | | &66 | `EOF` |
 | &42 | `FN` | | &67 | `PTR` |
-| &43 | `BIN` | | &68 | *(unused)* |
+| &43 | `BIN` | | &68 | *(unused — see below)* |
 | &44 | `XMOUSE` | | &69 | `UDG` |
-| &45 | `YMOUSE` | | &6A | *(unused)* |
+| &45 | `YMOUSE` | | &6A | *(unused — see below)* |
 | &46 | `XPEN` | | &6B | `LEN` |
 | &47 | `YPEN` | | &6C | `CODE` |
 | &48 | `RAMTOP` | | &6D | `VAL$` |
@@ -84,15 +99,49 @@ The ten unused codes — &49, &4E, &51, &52, &68, &6A, &75, &77–&79 and &7D �
 have placeholder entries in the keyword table so the numbering stays right.
 They are what a utility hooking `EVALUV` would claim.
 
+Two of them are claimed in practice:
+
+| Code | Keyword | | Note |
+|---|---|---|---|
+| &68 | `XVAR` | **`[MB]`** | Numeric argument, numeric result |
+| &6A | `NVAL` | **`[MB]`** | String argument, numeric result |
+
+The ROM's priority tables fix those two signatures, and MasterBASIC's
+functions match them. &7D — the slot the unimplemented `BXOR` operator was
+allocated — is still free.
+
+### Function codes below &3B
+
+The evaluator rejects any function code below `PI` (&3B), so this range is
+invisible to the ROM and is where both extensions put their own functions.
+None of these exist without the extension loaded.
+
+| Code | Keyword | | Code | Keyword | |
+|---|---|---|---|---|---|
+| &26 | `EXIT PROC` | **`[MB]`** | &30 | `TIME$` | **`[MD]`** |
+| &27 | `EXIT DO` | **`[MB]`** | &31 | `DATE$` | **`[MD]`** |
+| &28 | `EXIT FOR` | **`[MB]`** | &32 | `INP$` | **`[MD]`** |
+| &29 | `LOCN` | **`[MB]`** | &33 | `DIR$` | **`[MD]`** |
+| &2A | `RESERVED` | **`[MB]`** | &34 | `FSTAT` | **`[MD]`** |
+| &2B | `EQU` | **`[MB]`** | &35 | `DSTAT` | **`[MD]`** |
+| &2C | `TICS` | **`[MB]`** **`[MD]`** | &36 | `FPAGES` | **`[MD]`** |
+| &2D | `SHIFT$` | **`[MB]`** | &37 | `SCRAD` | **`[MB]`** |
+| &2E | `SVAL$` | **`[MB]`** | &38 | `INARRAY` | **`[MB]`** |
+| &2F | `USING$` | **`[MB]`** | &39–&3A | *free* | |
+
+Note that the ROM reserves names for `INARRAY`, `USING$` and `SHIFT$` inside
+its own range, at &49, &51 and &52, and never implements them. MasterBASIC
+implements all three — but here, below &3B, ignoring the ROM's reserved slots.
+
 ## D.3 Qualifier tokens, &85–&8F
 
 | Token | Keyword | Used by |
 |---|---|---|
 | &85 | `USING` | `FILL` |
-| &86 | `WRITE` | *(reserved — unused)* |
+| &86 | `WRITE` | *(unused by the ROM)* — **`[SD2]`** **`[MD]`** a record-file command |
 | &87 | `AT` | Print items |
 | &88 | `TAB` | Print items |
-| &89 | `OFF` | *(reserved — unused)* |
+| &89 | `OFF` | *(unused by the ROM)* — **`[DOS]`** `PROTECT OFF`, `HIDE OFF` |
 | &8A | `WHILE` | `DO`, `LOOP` |
 | &8B | `UNTIL` | `DO`, `LOOP` |
 | &8C | `LINE` | `SAVE`, `INPUT`, `READ`, `PALETTE` |
@@ -102,15 +151,17 @@ They are what a utility hooking `EVALUV` would claim.
 
 ## D.4 Command tokens, &90–&F6
 
-**D** marks a command reserved for a disk operating system: the ROM
-tokenises it but dispatches it to *Not understood*.
+A tag marks a command the ROM tokenises but dispatches to *Not understood* —
+it works only when the tagged product is loaded. The tags are the ones
+defined in [D.1](#tags); the claimed tokens are collected in a table of their
+own [below](#command-tokens-claimed-by-the-extensions).
 
 | Token | Keyword | | Token | Keyword |
 |---|---|---|---|---|
-| &90 | `DIR` **D** | | &C4 | `DEFAULT` |
-| &91 | `FORMAT` **D** | | &C5 | `DIM` |
-| &92 | `ERASE` **D** | | &C6 | `INPUT` |
-| &93 | `MOVE` **D** | | &C7 | `RANDOMIZE` |
+| &90 | `DIR` **`[DOS]`** | | &C4 | `DEFAULT` |
+| &91 | `FORMAT` **`[DOS]`** | | &C5 | `DIM` |
+| &92 | `ERASE` **`[DOS]`** | | &C6 | `INPUT` |
+| &93 | `MOVE` **`[MD]`** | | &C7 | `RANDOMIZE` |
 | &94 | `SAVE` | | &C8 | `DEF FN` |
 | &95 | `LOAD` | | &C9 | `DEF KEYCODE` |
 | &96 | `MERGE` | | &CA | `DEF PROC` |
@@ -118,7 +169,7 @@ tokenises it but dispatches it to *Not understood*.
 | &98 | `OPEN` | | &CC | `RENUM` |
 | &99 | `CLOSE` | | &CD | `DELETE` |
 | &9A | `CIRCLE` | | &CE | `REF` † |
-| &9B | `PLOT` | | &CF | `COPY` **D** |
+| &9B | `PLOT` | | &CF | `COPY` **`[DOS]`** |
 | &9C | `LET` | | &D0 | *(unused)* |
 | &9D | `BLITZ` | | &D1 | `KEYIN` |
 | &9E | `BORDER` | | &D2 | `LOCAL` |
@@ -138,7 +189,7 @@ tokenises it but dispatches it to *Not understood*.
 | &AC | `PUT` | | &E0 | `OUT` |
 | &AD | `BEEP` | | &E1 | `POKE` |
 | &AE | `SOUND` | | &E2 | `DPOKE` |
-| &AF | `NEW` | | &E3 | `RENAME` **D** |
+| &AF | `NEW` | | &E3 | `RENAME` **`[DOS]`** |
 | &B0 | `RUN` | | &E4 | `CALL` |
 | &B1 | `STOP` | | &E5 | `ROLL` |
 | &B2 | `CONTINUE` | | &E6 | `SCROLL` |
@@ -152,18 +203,46 @@ tokenises it but dispatches it to *Not understood*.
 | &BA | `RESTORE` | | &EE | `POP` |
 | &BB | `PRINT` | | &EF | `RECORD` |
 | &BC | `LPRINT` | | &F0 | `DEVICE` |
-| &BD | `LIST` | | &F1 | `PROTECT` **D** |
-| &BE | `LLIST` | | &F2 | `HIDE` **D** |
+| &BD | `LIST` | | &F1 | `PROTECT` **`[DOS]`** |
+| &BE | `LLIST` | | &F2 | `HIDE` **`[DOS]`** |
 | &BF | `DUMP` | | &F3 | `ZAP` |
 | &C0 | `FOR` | | &F4 | `POW` |
 | &C1 | `NEXT` | | &F5 | `BOOM` |
 | &C2 | `PAUSE` | | &F6 | `ZOOM` |
-| &C3 | `DRAW` | | &F7–&FE | *(unused)* |
+| &C3 | `DRAW` | | &F7–&FE | *(unused by the ROM — see below)* |
 
 † `REF` is only valid inside a `DEF PROC` parameter list; used as a statement
 it gives *Not understood*.
 
 `&FF` is the function prefix and never a command.
+
+### Command tokens claimed by the extensions
+
+The eight DOS-reserved spellings are implemented by a DOS; the seven tokens
+above &F6 are new spellings the extensions add through `MTOKV`.
+
+| Token | Keyword | | Note |
+|---|---|---|---|
+| &90 | `DIR` | **`[DOS]`** | |
+| &91 | `FORMAT` | **`[DOS]`** | The ROM does use the keyword itself, in `LIST FORMAT n` |
+| &92 | `ERASE` | **`[DOS]`** | |
+| &93 | `MOVE` | **`[MD]`** | SAMDOS 2 does not implement this one |
+| &CF | `COPY` | **`[DOS]`** | The ROM's own screen dump is `DUMP` |
+| &E3 | `RENAME` | **`[DOS]`** | |
+| &F1 | `PROTECT` | **`[DOS]`** | |
+| &F2 | `HIDE` | **`[DOS]`** | |
+| &F7 | `BACKUP` | **`[MD]`** | |
+| &F8 | `TIME` | **`[MD]`** | |
+| &F9 | `DATE` | **`[MD]`** | |
+| &FA | `ALTER` | **`[MB]`** | Reserved but commented out in the MasterDOS source |
+| &FB | `SORT` | **`[MB]`** | Likewise |
+| &FC | `JOIN` | **`[MB]`** | |
+| &FD | `EDIT` | **`[MB]`** | |
+
+`SAVE`, `LOAD`, `MERGE`, `VERIFY`, `OPEN`, `CLOSE`, `CLEAR`, `READ`, `CALL`
+and `RUN` all keep their ROM meanings but are extended by a DOS.
+
+**With everything loaded, the only free command tokens are &D0 and &FE.**
 
 ### Notes on particular tokens
 
@@ -175,11 +254,13 @@ it gives *Not understood*.
   block form (&D7, &D9) because it appears first in the table; the syntax
   checker rewrites the stored byte to the single-line form (&D8, &DA) when it
   finds a `THEN`. Both spellings list identically.
-* **`COPY` (&CF) is not implemented**; the ROM's screen dump is `DUMP` (&BF).
+* **`COPY` (&CF) is not implemented by the ROM**; its screen dump is `DUMP`
+  (&BF). Both DOSes implement `COPY` as a file copy.
 * **`FORMAT` (&91)** is reserved for DOS as a command, but the ROM does use
   the keyword in `LIST FORMAT n`.
-* **&D0 and &F7–&FE are free**, and are what a utility hooking `CMDV` would
-  claim.
+* **&D0 and &F7–&FE are free in the ROM**, and are what a utility hooking
+  `CMDV` would claim. In practice MasterDOS takes &F7–&F9 and MasterBASIC
+  &FA–&FD, leaving only &D0 and &FE.
 
 ## D.5 Operator priorities
 

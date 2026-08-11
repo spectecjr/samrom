@@ -288,11 +288,18 @@ This gives you, essentially for free:
 |---|---|
 | `LPRINT …` | As `PRINT`, but to stream 3 |
 | `LLIST …` | As `LIST`, but to stream 3 |
-| `DUMP` | Text screen dump |
-| `DUMP CHR$` | Graphics screen dump |
+| `DUMP` | Screen dump |
+| `DUMP CHR$` | Screen dump — accepted, but see below |
 
 There is **no printer driver in the ROM**. `DUMP` calls through the `DMPV`
-vector, and if nothing is installed there it does nothing at all. The `P`
+vector, and if nothing is installed there it does nothing at all.
+
+Both forms hand the driver A = &AF, the value that means "graphics". The
+ROM's source labels the `CHR$` branch as a text copy, but the code falls
+through to the graphics value either way; A = 0 is only ever passed by the
+`JTCOPY` jump-table entry at &015D. So from BASIC the two forms are
+equivalent, and what they actually do is entirely up to the installed
+driver. The `P`
 channel sends characters to the printer port; the `B` channel sends raw
 bytes.
 

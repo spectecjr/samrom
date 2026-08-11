@@ -168,7 +168,8 @@ comparing the two images the same way.
 
 ### Pre-existing source/image discrepancy
 
-The assembled original differs from `roms/ROM30` in exactly three bytes, at ROM1 &FAB8-&FABA: the source spells the
+The assembled original differs from `roms/ROM30` in exactly three bytes, at ROM1 &F5F8-&F5FA (file offset 30200, in
+the copyright banner at `UMVAL` = &F5DD): the source spells the
 copyright banner `MILES GORDON TECHNOLOGY PLC` where the shipped image has `plc`. This predates the annotation and
 is unaffected by it — but it does mean the source is not quite a byte-exact reconstruction of the official image,
 despite what `ReadMe.txt` implies.
@@ -232,6 +233,7 @@ Prose documentation of the same material lives in [`../docs`](../docs):
 * [memory-map.md](../docs/memory-map.md) — system page and BASIC area layout
 * [machine-code-interface.md](../docs/machine-code-interface.md) — jump table, calculator, `CALL`/`USR`
 * [extending-basic.md](../docs/extending-basic.md) — the interpreter's extension hooks, with worked examples
+* [dos-and-extensions.md](../docs/dos-and-extensions.md) — what SAMDOS 2, MasterDOS and MasterBASIC add on top
 * [tokenized-program-format.md](../docs/tokenized-program-format.md) — tokeniser and stored program format
 * [file-formats.md](../docs/file-formats.md) — saved file header and layout
 * [font-rendering.md](../docs/font-rendering.md) — character cell geometry

@@ -240,7 +240,7 @@ These raise error 53, *No DOS*, on a bare machine:
 
 | Function | Purpose |
 |---|---|
-| `DVAR n` | Read a DOS variable |
+| `DVAR n` | The address of a DOS variable, used like `SVAR` |
 | `EOF #s` | End of file on stream *s* |
 | `PTR #s` | File pointer of stream *s* |
 | `PATH$` | The current path |
