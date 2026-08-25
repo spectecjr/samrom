@@ -79,6 +79,7 @@ you start writing machine code or picking the ROM apart:
 * [file-formats.md](../file-formats.md) — saved-file headers
 * [font-rendering.md](../font-rendering.md) — character cell geometry
 * [hudg.md](../hudg.md) — the font pointers and the dormant high-UDG range
+* [keyboard.md](../keyboard.md) — how keys are scanned, debounced, repeated and queued
 * [constants.md](../constants.md) — every constant in the ROM source
 * [source-files.md](../source-files.md) — per-file, per-routine reference
 

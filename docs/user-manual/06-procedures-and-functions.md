@@ -211,7 +211,7 @@ Rules:
 
 * The name follows variable-name rules; it must end in `$` if — and only if —
   the body yields a string. A mismatch is a syntax error.
-* **Parameters must be single letters** (optionally followed by `$`). Inside
+* **Parameters must be single letters** (optionally followed by a dollar sign). Inside
   the body, those single letters refer to the arguments rather than to any
   global of the same name.
 * The body is a single expression. There are no statements and no local

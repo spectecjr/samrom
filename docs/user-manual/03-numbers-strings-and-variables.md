@@ -145,7 +145,7 @@ PRINT a$                     : REM aXYdef
 | Kind | Maximum length | Characters allowed |
 |---|---|---|
 | Numeric | 32 | Letters, digits, underscore; must start with a letter |
-| String (`name$`) | 10 | As above, plus the trailing `$` |
+| String (`name$`) | 10 | As above, plus the trailing dollar sign |
 | Array (`name(…)`) | 10 | As above |
 
 Rules that apply to all of them:

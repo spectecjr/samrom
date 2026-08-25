@@ -462,12 +462,12 @@ use the same two-form representation as the ZX Spectrum:
 | 3 | Value MSB |
 | 4 | &00 |
 
-**Floating-point form** — the magnitude is $ m \times 2^{e-128} $ with the
-mantissa normalised to $ 0.5 \le m < 1 $:
+**Floating-point form** — the magnitude is $`m \times 2^{e-128}`$ with the
+mantissa normalised to $`0.5 \le m < 1`$:
 
 | Byte | Contents |
 |---|---|
-| 0 | Exponent $ e $ (&01–&FF, bias &80) |
+| 0 | Exponent $`e`$ (&01–&FF, bias &80) |
 | 1 | Mantissa byte 1 — bit 7 **replaced** by the sign (0 = +, 1 = −); the mantissa's own top bit is implicit (always 1) |
 | 2–4 | Mantissa bytes 2–4, most significant first |
 

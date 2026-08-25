@@ -789,9 +789,10 @@ FLITL:       LD A,(HL)
 ; BASIC's Y coordinates run 175 at the top down to -16 at the bottom; scans run 0 to 191 the other way. The
 ; coordinate machinery expects a pair, so the value is duplicated and the dummy X discarded afterwards.
 ;
-; Exit:   A = the scan, 1 to 191.
-; Notes:  Scan 0 is rejected. A change at BASIC line 175 would need an interrupt at the end of the scan before the
-;         first, which does not exist.
+; Exit:   A = the scan, 0 to 190 -- one less than the display line the change first appears on, since the interrupt
+;         has to arrive at the end of the line before it.
+; Notes:  LINE 175, the top line, is therefore rejected: it would need an interrupt at the end of the scan before
+;         the first, which does not exist.
 ; ---------------------------------------------------------------------------------------------------------------------
 
 COLATSR:     DB CALC

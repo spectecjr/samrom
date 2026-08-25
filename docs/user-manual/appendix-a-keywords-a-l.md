@@ -500,7 +500,7 @@ DEF FN name[$] ( [parameter [, parameter …]] ) = expression
 
 Defines a single-expression function. The name follows variable-name rules
 and must end in `$` if and only if the body yields a string. **Parameters
-must be single letters**, optionally followed by `$`.
+must be single letters**, optionally followed by a dollar sign.
 
 Inert at run time. Call with `FN`.
 

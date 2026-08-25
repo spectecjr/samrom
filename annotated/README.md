@@ -209,6 +209,11 @@ string quote even in `EX AF,AF'`, which swallowed the following comment, and the
 *inside* identifiers, so `SKIP1LDH` was read as `SKIP1L` plus the suffix-hex literal `DH`. Both produced false
 mismatches on files the assembler had already confirmed byte-identical.
 
+The same script is used by the annotated [SAMDOS 2](https://github.com/stefandrissen/samdos) source, which selects
+its own extension with `--ext=.s`. Annotating that tree turned up four further parsing bugs, all fixed here too:
+dotted identifiers were not recognised as symbols; `<<`, `>>` and `|` were not folded; and expressions inside an
+indirection, or led by a label whose value is unknowable without assembling, were not folded at all.
+
 The check has teeth: it was validated by seeding a one-byte change (`LD A,&FE` → `LD A,&FD`), which it located
 immediately, and it caught a genuine error during the conversion of `main.asm`, where the `MODE` range check's
 `LD DE,&0400+34` had been rewritten with the wrong error constant (34 is `ERR_BADMODE`, not `ERR_IOOR`).
@@ -238,3 +243,4 @@ Prose documentation of the same material lives in [`../docs`](../docs):
 * [file-formats.md](../docs/file-formats.md) — saved file header and layout
 * [font-rendering.md](../docs/font-rendering.md) — character cell geometry
 * [hudg.md](../docs/hudg.md) — character set pointers
+* [keyboard.md](../docs/keyboard.md) — matrix scan, debouncing, auto-repeat, type-ahead queue

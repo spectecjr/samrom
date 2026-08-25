@@ -314,6 +314,7 @@ A program that will be maintained should look like this:
 | [file-formats.md](../file-formats.md) | The 80-byte header, field by field |
 | [font-rendering.md](../font-rendering.md) | Cell geometry, and designing a font that works at every `CSIZE` |
 | [hudg.md](../hudg.md) | The three font pointers, and how to populate the dormant high-UDG range |
+| [keyboard.md](../keyboard.md) | The scan, the debounce, auto-repeat, and why `INKEY$` cannot be fed from the queue |
 | [constants.md](../constants.md) | Every named constant in the ROM |
 | [source-files.md](../source-files.md) | Routine-by-routine reference to the whole ROM |
 

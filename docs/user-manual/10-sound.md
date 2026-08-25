@@ -19,7 +19,7 @@ BEEP duration, pitch
 
 The frequency produced is
 
-$$ f = 55 \times 2^{(n+27)/12} \text{ Hz} $$
+$`f = 55 \times 2^{(n+27)/12} \text{ Hz}`$
 
 — 27 semitones below middle C is the A at 55 Hz that anchors the scale.
 

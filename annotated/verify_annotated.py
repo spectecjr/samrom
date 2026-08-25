@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify that an annotated .asm file emits the same code as the original.
+"""Verify that an annotated assembly file emits the same code as the original.
 
 The check is textual but semantic: comments and blank lines are discarded,
 every symbol that resolves to a number through an EQU is replaced by that
@@ -10,7 +10,10 @@ If the streams match, the two files must assemble identically -- annotation
 and constant-naming cannot have changed the emitted bytes.
 
 Usage:
-    verify_annotated.py ORIGINAL_DIR ANNOTATED_DIR [file.asm ...]
+    verify_annotated.py [--ext=.s] ORIGINAL_DIR ANNOTATED_DIR [file ...]
+
+--ext selects the source extension to scan for. It defaults to .asm, which is
+what the SAM ROM tree uses; the SAMDOS tree uses .s.
 """
 
 from __future__ import annotations
@@ -30,9 +33,9 @@ from pathlib import Path
 # the ";" of any trailing comment and make two identical instructions compare unequal.
 QUOTED = re.compile(r'"[^"]*"|(?<![A-Za-z_0-9])\'[^\']*\'')
 
-# Numeric literals. The lookbehind keeps the pattern from matching *inside* an identifier: without it SKIP1LDH is
-# read as SKIP1L followed by the suffix-hex literal "DH", and SCANBYTESM01 as SCANBYTESM followed by 01, so neither
-# symbol is ever resolved.
+# Numeric literals. The guards on either side keep the pattern from matching part of an identifier: without the
+# lookbehind SKIP1LDH is read as SKIP1L followed by the suffix-hex literal "DH", and without the lookahead the
+# SAMDOS symbol fdh.number is read as the suffix-hex literal "fdh" followed by ".number".
 NUMBER = re.compile(
     r"""
     (?<![A-Za-z_0-9])
@@ -41,17 +44,20 @@ NUMBER = re.compile(
     | \$[0-9A-Fa-f]+         # $FF   alternative hex
     | 0[xX][0-9A-Fa-f]+      # 0xFF
     | %[01]+                 # %1010 binary
-    | [0-9A-Fa-f]+[Hh]\b     # 0FFh  suffix hex
+    | [0-9A-Fa-f]+[Hh]       # 0FFh  suffix hex
     | \d+                    # 123   decimal
     )
+    (?![A-Za-z_0-9.])
     """,
     re.VERBOSE,
 )
 
-IDENT = re.compile(r"[A-Za-z_][A-Za-z_0-9]*")
+# Identifiers may contain dots: the SAMDOS source uses them as a namespace separator (gnd.bank, org.adjust,
+# comm.port.1), and this annotation follows that convention for the constants it adds.
+IDENT = re.compile(r"[A-Za-z_][A-Za-z_0-9.]*")
 
 EQU_LINE = re.compile(
-    r"^\s*([A-Za-z_][A-Za-z_0-9]*)\s*:?\s+EQU\s+(.+?)\s*$",
+    r"^\s*([A-Za-z_][A-Za-z_0-9.]*)\s*:?\s+EQU\s+(.+?)\s*$",
     re.IGNORECASE,
 )
 
@@ -148,7 +154,7 @@ def try_eval(expr: str, values: dict[str, int]) -> int | None:
 
     # pyz80 uses \ for integer division in the sources we care about.
     work = work.replace("\\", "//")
-    if not re.fullmatch(r"[-+*/() 0-9]|[-+*/() 0-9]+", work.strip()):
+    if not re.fullmatch(r"[-+*/()<>| 0-9]+", work.strip()):
         return None
     try:
         return int(eval(work, {"__builtins__": {}}, {}))  # noqa: S307 - arithmetic only
@@ -214,7 +220,9 @@ def normalise(line: str, values: dict[str, int]) -> str | None:
     return (f"{label}: " if label else "") + text
 
 
-ARITH_ONLY = re.compile(r"^[-+*/() 0-9\\]+$")
+# Operators the folder understands. The shift and or operators are included because a bit mask is most clearly
+# written as "1<<bit | 1<<bit"; & is deliberately left out, since it is pyz80's hex prefix rather than an operator.
+ARITH_ONLY = re.compile(r"^[-+*/()<>| 0-9\\]+$")
 
 
 def split_top_level(s: str) -> list[str]:
@@ -234,6 +242,36 @@ def split_top_level(s: str) -> list[str]:
     return parts
 
 
+ADD_SPLIT = re.compile(r"([+-])")
+
+
+def fold_numeric_tail(op: str) -> str:
+    """Fold the numeric terms of an expression whose first term is an unresolvable label.
+
+    Labels have no value until the file is assembled, so an operand like "uifa+hdr.start+1" cannot be reduced to a
+    number -- but the constants in it can still be added up, giving "uifa+32", which is what the original source
+    spells directly. Only chains of + and - are handled, so there is no precedence to get wrong.
+    """
+    if any(c in op for c in "()*/\\<>|"):
+        return op
+    parts = ADD_SPLIT.split(op)
+    if len(parts) < 3:
+        return op
+    head = parts[0].strip()
+    if not head:
+        return op
+    total = 0
+    rest = parts[1:]
+    for i in range(0, len(rest), 2):
+        term = rest[i + 1].strip()
+        if not term.isdigit():
+            return op
+        total += int(term) if rest[i] == "+" else -int(term)
+    if total == 0:
+        return head
+    return f"{head}{'+' if total > 0 else '-'}{abs(total)}"
+
+
 def fold_operands(text: str) -> str:
     """Constant-fold arithmetic in operands so &0400+34 and (4*256)+34 compare equal.
 
@@ -251,12 +289,18 @@ def fold_operands(text: str) -> str:
         op = operand.strip()
         wrapped = op.startswith("(") and op.endswith(")") and split_top_level(op[1:-1]) == [op[1:-1]] \
             and balanced(op[1:-1])
-        if not wrapped and ARITH_ONLY.match(op) and re.search(r"[-+*/\\]", op):
+        # An indirection keeps its parentheses -- that is what distinguishes LD HL,(CHAD) from arithmetic -- but the
+        # address inside one is still an expression and is folded, so (uifa+31+1) and (uifa+32) compare equal.
+        body = op[1:-1] if wrapped else op
+        if ARITH_ONLY.match(body) and re.search(r"[-+*/\\<>|]", body):
             try:
-                val = int(eval(op.replace("\\", "//"), {"__builtins__": {}}, {}))  # noqa: S307
-                op = str(val & 0xFFFF)
+                val = int(eval(body.replace("\\", "//"), {"__builtins__": {}}, {}))  # noqa: S307
+                body = str(val & 0xFFFF)
             except Exception:
                 pass
+        else:
+            body = fold_numeric_tail(body)
+        op = "(" + body + ")" if wrapped else body
         out.append(op)
     return mnem + " " + ",".join(out)
 
@@ -290,11 +334,11 @@ def code_stream(path: Path, values: dict[str, int], inert: set[str] | None = Non
     return out
 
 
-def find_inert(dirs: list[Path], values: dict[str, int]) -> set[str]:
-    """Names of .asm files that emit no bytes at all (pure EQU/comment files)."""
+def find_inert(dirs: list[Path], values: dict[str, int], ext: str) -> set[str]:
+    """Names of source files that emit no bytes at all (pure EQU/comment files)."""
     inert: set[str] = set()
     for d in dirs:
-        for p in d.glob("*.asm"):
+        for p in d.glob("*" + ext):
             if not code_stream(p, values):
                 inert.add(p.name.lower())
     return inert
@@ -306,20 +350,46 @@ def find_inert(dirs: list[Path], values: dict[str, int]) -> set[str]:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) < 3:
+    args = list(argv[1:])
+    ext = ".asm"
+    for i, a in enumerate(args):
+        if a.startswith("--ext="):
+            ext = a.split("=", 1)[1]
+            if not ext.startswith("."):
+                ext = "." + ext
+            del args[i]
+            break
+
+    if len(args) < 2:
         print(__doc__)
         return 2
 
-    orig_dir = Path(argv[1])
-    anno_dir = Path(argv[2])
-    names = argv[3:] or sorted(p.name for p in anno_dir.glob("*.asm"))
+    orig_dir = Path(args[0])
+    anno_dir = Path(args[1])
+    names = args[2:] or sorted(p.name for p in anno_dir.glob("*" + ext))
 
     # Symbols come from both trees so either naming scheme resolves.
-    equ_sources = sorted(orig_dir.glob("*.asm")) + sorted(anno_dir.glob("*.asm"))
+    equ_sources = sorted(orig_dir.glob("*" + ext)) + sorted(anno_dir.glob("*" + ext))
     values = resolve(collect_equs(equ_sources))
-    inert = find_inert([orig_dir, anno_dir], values)
+    inert = find_inert([orig_dir, anno_dir], values, ext)
 
     failures = 0
+
+    # Because the two trees share one symbol table, a symbol whose *value* was changed would resolve to the same
+    # (wrong) number on both sides and the streams would still match. Resolve each tree on its own and compare, so
+    # that redefining a constant is caught. Symbols added by the annotation appear only in the second table and are
+    # not a difference.
+    orig_values = resolve(collect_equs(sorted(orig_dir.glob("*" + ext))))
+    anno_values = resolve(collect_equs(sorted(anno_dir.glob("*" + ext))))
+    changed = sorted(
+        (name, orig_values[name], anno_values[name])
+        for name in orig_values.keys() & anno_values.keys()
+        if orig_values[name] != anno_values[name]
+    )
+    for name, was, now in changed:
+        print(f"  ** SYMBOL {name}: {was} in the original, {now} in the annotated tree")
+    if changed:
+        failures += 1
     for name in names:
         orig = orig_dir / name
         anno = anno_dir / name

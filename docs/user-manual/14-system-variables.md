@@ -452,7 +452,8 @@ DPOKE 23672, 0                 : REM reset the frame clock
   divert the interpreter.
 * A handful of bytes — `TABVAR`, `BREAKDI`, `SOFE`, `TPROMPTS`,
   `PRRHS`, `INSTHASH`, `REPDEL`/`REPPER` — give you behaviour with no command
-  of its own.
+  of its own. For what the keyboard group actually does, see
+  [keyboard.md](../keyboard.md).
 
 ---
 

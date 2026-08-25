@@ -30,6 +30,8 @@ Companion documents:
   bits and scans of a bitmap reach the screen at each `CSIZE`.
 - [hudg.md](hudg.md) — the `CHARS`/`UDG`/`HUDG` font pointers and the dormant
   high-UDG range.
+- [keyboard.md](keyboard.md) — the matrix scan, debouncing, auto-repeat and
+  the type-ahead queue.
 
 ## File index
 
@@ -466,7 +468,7 @@ pattern data then attributes; mode 0 has its own scan-stepping loop
 follows the text.
 
 #### CALCPIX
-$ \text{scans} = \text{rows} \times \text{height} $ where the height comes
+$`\text{scans} = \text{rows} \times \text{height}`$ where the height comes
 from CSIZE (6–32), plus DHADJ (8) when the bottom half of a double-height
 character is being placed.
 
@@ -1097,7 +1099,7 @@ the end unless it started off-screen. Updates XCOORD/YCOORD to the endpoint.
 `PLOTFD` fiddles coordinates through XOS/YOS/XRG/YRG (Y ends 0 at top),
 updates YCOORD/XCOORD, selects the screen page, and jumps through IY. Thin
 plot computes
-$ \text{addr} = \&8000 + Y \times 128 + \lfloor X/4 \rfloor$
+$`\text{addr} = \&8000 + Y \times 128 + \lfloor X/4 \rfloor`$
 and rotates a 2-bit mask into place, honouring OVER and INVERSE against
 M23INKT/M23PAPT.
 
@@ -1255,7 +1257,7 @@ At check time just validates subscript/slicer syntax. At run time: simple
 strings convert the pages+mod-16K length to a 16-bit length and stack a
 descriptor (bit 7 of page set = replace-on-assign); arrays walk the dimension
 list computing
-$ \text{total} = (\dots(s_1 \times d_2 + s_2) \times d_3 + \dots) + s_n $,
+$`\text{total} = (\dots(s_1 \times d_2 + s_2) \times d_3 + \dots) + s_n`$,
 finally multiplied by 5 (numeric) or by the last dimension (string) and
 added to the data start. String results may then be sliced:
 `SLICING` handles `(a TO b)` with defaults, empty result for reversed
@@ -1533,10 +1535,10 @@ DEVICE selects SPOSNU/SPOSNL/PRPOSN; returns D=row, E=col, A=RHS limit
 (WINDRHS or PRRHS), CY for printer.
 
 #### ANYDEADDR
-$ \text{addr} = \&8000 + \text{scans} \times w + \text{col} \times b $,
-with the per-mode scan width $ w $ and bytes-per-column $ b $:
+$`\text{addr} = \&8000 + \text{scans} \times w + \text{col} \times b`$,
+with the per-mode scan width $`w`$ and bytes-per-column $`b`$:
 
-| Mode | $ w $ (bytes/scan) | $ b $ (bytes/column) |
+| Mode | $`w`$ (bytes/scan) | $`b`$ (bytes/column) |
 |---|---|---|
 | 0 | 32 (interleaved thirds layout) | 1 |
 | 1 | 32 | 1 |
@@ -1742,12 +1744,12 @@ Chebyshev-based transcendental functions, all written as calculator code.
 |---|---|
 | `FPSIN`/`FPCOS`/`FPTAN` | Sine (W.E. Thomson's faster series), cosine = sin(x+π/2), tan = sin/cos |
 | `FPREDARG` | Reduce an angle to the −π…π range (V = x/2π fractional part scaled) |
-| `FPEXP`/`FPPOWR2` | $ e^x = 2^{x \log_2 e} $; $ 2^y $ with integer/fraction split (error 28 on overflow, 0 on deep underflow) |
-| `FPPOWER` | $ N_1^{N_2} $: special-cases $ N_1 = 0 $ and integer powers 0–&3F (by repeated multiplication), else $ e^{N_2 \ln N_1} $ |
+| `FPEXP`/`FPPOWR2` | $`e^x = 2^{x \log_2 e}`$; $`2^y`$ with integer/fraction split (error 28 on overflow, 0 on deep underflow) |
+| `FPPOWER` | $N_1^{N_2}$: special-cases $`N_1 = 0`$ and integer powers 0–&3F (by repeated multiplication), else $`e^{N_2 \ln N_1}`$ |
 | `FPLOGN` | Natural log: exponent extraction + series on the mantissa |
-| `FPARCTAN`/`FPARCSIN`/`FPARCCOS` | ATN (range-folded series); $ \operatorname{ASN} x = \operatorname{ATN}\dfrac{x}{\sqrt{1-x^2}} $; $ \operatorname{ACS} x = \pi/2 - \operatorname{ASN} x $ |
+| `FPARCTAN`/`FPARCSIN`/`FPARCCOS` | ATN (range-folded series); $`\operatorname{ASN} x = \operatorname{ATN}\dfrac{x}{\sqrt{1-x^2}}`$; $`\operatorname{ACS} x = \pi/2 - \operatorname{ASN} x`$ |
 | [SERIES](#series) | The Chebyshev series engine: 12-coefficient loop driven by DECB with inline literals |
-| `FPSQR` | (in rom1fns/transend flow) $ \sqrt{x} = x^{0.5} $ via the POWER path with a fast exponent halving |
+| `FPSQR` | (in rom1fns/transend flow) $`\sqrt{x} = x^{0.5}`$ via the POWER path with a fast exponent halving |
 
 ### Details
 
@@ -1800,8 +1802,8 @@ cancellation case giving zero.
 
 #### DFPFORM
 `FPFORM` (= calculator op RESTACK) rewrites a small-integer entry
-`00 sign lo hi 00` as exponent/mantissa form (exponent = $ \&90 - s $ where
-$ s $ is the normalising shift; mantissa = the value shifted so bit 30 is
+`00 sign lo hi 00` as exponent/mantissa form (exponent = $\&90 - s$ where
+$`s`$ is the normalising shift; mantissa = the value shifted so bit 30 is
 the top set bit; sign in mantissa bit 7).
 `DFPFORM` does both operands for the multiply/divide/power paths.
 
@@ -1812,7 +1814,7 @@ the top set bit; sign in mantissa bit 7).
 | Entry point | Description |
 |---|---|
 | [FPVAL / FPVALS](#fpval) | VAL/VAL$: tokenize the argument text in workspace, syntax-check it as an expression, then evaluate it (with FLAGS run bit borrowed) |
-| `IMRND` | RND [(n)]: congruential seed update $ \text{seed} \leftarrow ((\text{seed}+1) \times 75 \bmod 65537) - 1 $; returns a fraction, or an integer in $ 0 \dots n-1 $ |
+| `IMRND` | RND [(n)]: congruential seed update $`\text{seed} \leftarrow ((\text{seed}+1) \times 75 \bmod 65537) - 1`$; returns a fraction, or an integer in $`0 \dots n-1`$ |
 | `IMATTR`/`IMPOINT` | ATTR(l,c) and POINT(x,y) — read attribute byte / pixel ink number in any mode |
 | `GETCP` | Validate a line/col pair against limits |
 | `FPINKEY`/`FPINKEN` | INKEY$ [#n]: stream version reads the channel; builds a 1-char string |
@@ -1968,7 +1970,7 @@ otherwise), and jump to the DOS init at &8009.
 | [PRFPBUF](#prfpbuf) | Raw conversion: integer part by repeated decimal subtraction/BCD, fraction by repeated ×10 of the binary fraction |
 | `DECDIGP`/`DECDIGN` | log10 bounds for a power of two (digits before point / zeros after) |
 | `DECIMIZE`/`PRBCD` | Binary→BCD conversion of the integer part and BCD→ASCII output |
-| [POFTEN](#poften) | Multiply the FP top by $ 10^{A} $ (A signed) — used by E-format input and output |
+| [POFTEN](#poften) | Multiply the FP top by $10^{A}$ (A signed) — used by E-format input and output |
 
 ### Details
 
@@ -2267,7 +2269,7 @@ mid-frame via the line interrupt.
 ### Details
 
 #### BEEP
-Pitch $ p $: the octave $ \lfloor p/12 \rfloor $ offsets a base-frequency
+Pitch $`p`$: the octave $`\lfloor p/12 \rfloor`$ offsets a base-frequency
 table lookup; the fractional semitone interpolates. Produces DE=cycles−1, HL=half-period in
 8T units for BEEPP2, which toggles bit 4 of the KEYPORT with interrupts off
 (also the public vector &016F).

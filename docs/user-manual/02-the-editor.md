@@ -212,6 +212,12 @@ second):
 POKE 23561,10 : POKE 23562,1   : REM fast repeat
 ```
 
+A repeat is only queued if the key is still physically down *and* the
+previous character has already been read, so a held key cannot build up a
+backlog that keeps arriving after you let go.
+[keyboard.md](../keyboard.md) works through the scan, the debounce and the
+repeat interlocks in full.
+
 ### The keypad
 
 Code 15 toggles the numeric keypad between producing function-key codes and

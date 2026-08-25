@@ -80,6 +80,47 @@ high:
 Not in this chain (fixed in the system page): the FP calculator stack
 (&4D00, `STKEND`), the heap, the BASIC stack, and the machine stack.
 
+### What `SAVE` stores, and what `LOAD` rebuilds
+
+`SAVE` of a BASIC program writes **one contiguous block** from `PROG` with
+length $`(\text{ELINE} - 1) - \text{PROG}`$ — so the first four regions of the
+chain travel together, and everything from the edit line up does not. None of
+the boundary pointers is stored; they are reconstructed from three lengths in
+the header.
+
+| Region | In the file? | On `LOAD` |
+|---|---|---|
+| Program | Yes | Loaded verbatim |
+| Numeric variables | Yes | Verbatim — so `SAVE` after `RUN` preserves variable state, pseudo-variables (XOS/YOS/XRG/YRG) included |
+| The gap | Yes, as it stood | Verbatim; it is simply slack and costs file space |
+| Strings & arrays | Yes, **except the final &FF** | The stopper is re-planted, which is why the saved length stops one byte short of `ELINE` |
+| Edit line | **No** | Left exactly as it was — the block is opened *below* it |
+| Workspace | **No** | Left as it was |
+| Free space | **No** | — |
+
+**The three boundaries are rebuilt, not stored.** Header offsets 16/19/22 hold
+the distances PROG→`NVARS`, PROG→`NUMEND` and PROG→`SAVARS` in page form.
+`LDPROG` ([tapemn.asm](../tapemn.asm)) loops three times adding each to `PROG`
+and writing `NVARS`, `NUMEND`, `SAVARS` back. A program image is therefore
+freely relocatable: only those three lengths and the total have to agree.
+
+**What is discarded rather than restored:**
+
+| | |
+|---|---|
+| The BASIC stack | `LDPRDT` sets `BSTKEND` back to `BASSTK` — the `DO`/`GOSUB`/`PROC` frames refer to a program that no longer exists |
+| `NVARS` during the delete | Zeroed *before* the old program is reclaimed, so pointer auto-adjustment does not misfire and produce a bogus `FOR`-`NEXT` or BASIC-stack correction |
+| FN/PROC calling buffers | Present in the file but **stale** — they hold the addresses the program had when it was saved. `DOCOMP` re-resolves every `DEF PROC`, `DEF FN` and `LABEL` after loading, so an external tool may write them unresolved |
+| The `DATA` pointer | `RESTOREZ` resets it to the start of the program |
+| The FP calculator stack, heap, machine stack | Fixed in the system page, never part of the chain, never saved |
+
+A provisional &FF is planted at `PROG` before the data block is read, so a
+failed load leaves an empty but consistent program rather than wreckage.
+
+The file side of this — the header layout, the three lengths, the six steps of
+`LDPRDT`/`LDPROG`, and how `MERGE` splices instead of replacing — is in
+[file-formats.md](file-formats.md#what-the-data-block-contains-for-a-basic-program-type-16).
+
 ## ROM layout
 
 | Start | End | Length | Contents |

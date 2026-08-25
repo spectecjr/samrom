@@ -682,9 +682,18 @@ INTS2:     INC HL
            INC HL            ;FOURTH AND FIFTH
            LD (FRAMES34),HL
 
-; The mouse. If no mouse vector is installed the mouse interface is still read nine times, which is what resets its
-; internal shift register -- otherwise a mouse left plugged in would desynchronise the next program that did want to
-; read it.
+; The mouse. It shares port FFFE with the ninth keyboard row: the IN A,(n) form puts A on the high address lines,
+; so A=FF addresses the same port that KEYSCAN reads with B=FF. Each read steps the interface on, which is why the
+; mouse is dealt with here, before INTS5 scans the keyboard.
+;
+; The DEC H / LD A,H / INC H sequence does two jobs. INC H sets the flags both paths test -- Z means MOUSV has a
+; zero high byte, so no driver is installed -- and on that path it leaves A=FF ready to address FFFE for the first
+; read below. The same NZ then gates the CALL at INTS4.
+;
+; With no driver the interface is still read nine times, which resets it: otherwise the one read per frame that
+; KEYSCAN makes as row 9 would leave it at an arbitrary point in its packet and desynchronise the next program that
+; did want to read it. Reads 2-9 are stored at MSEDP, which is also where BUTSTAT (MSEDP+1) lives, so BUTTON sees
+; a raw reading on this path. Nothing in the ROM ever writes MXCRD or MYCRD -- that is the driver's job.
 
 INTS3:     LD HL,(MOUSV)
            DEC H
@@ -811,7 +820,8 @@ KEYRD2:    CALL KINTER       ;SCAN KEYBD, PLACE CHAR IN BUFFER IF THERE IS ONE.
 ; Debouncing and auto-repeat both hang off NLASTH, a three-entry history of the last, previous and
 ; previous-but-one scan code. A code that matches the last or the one before is treated as the same key still being
 ; held, which starts or continues auto-repeat; anything else is a new press. ENTER is checked against all three
-; entries, since it was found to stutter.
+; entries, since it was found to stutter -- it is a large L-shaped keycap over a single switch, so pressing it
+; off-centre rocks the cap and makes the contact bounce for longer than the small square keys do.
 ;
 ; Auto-repeat: REPCT counts down from REPDEL for the first repeat and from REPPER thereafter. Before repeating, the
 ; key is confirmed to be still down by looking it up in the raw KBUFF bitmap through LKPB (the port and bit the key
@@ -1059,8 +1069,10 @@ KBAKL:     DEC HL
            INC B             ;NZ
            RET
 
-; A new press. Find which bit it was, and turn (port, bit) into a scan code: nine keys per row, numbered so that
-; code = (bit-1)*9 - (row-1) with bit counted from 8 for bit 0.
+; A new press. Find which bit it was, and turn (port, bit) into a scan code. Codes run down a column of the matrix
+; rather than along a row: code = bit*9 - row, with bit counted 1 for bit 7 up to 8 for bit 0, and row 1 for port
+; FEFE up to 9 for FFFE. That gives 00-47H. Code 0 is bit 7 of port FFFE, which is forced high, so the translation
+; tables start at 1.
 
 KBYK:      DEC A
            LD C,9            ;BIT NUMBERS RUN 1 (BIT 7) TO 8 (BIT 0)
